@@ -373,9 +373,7 @@ python scripts/verify_e2e_live.py
 
 ## Project Documentation & Deliverables
 
-- **Project Report**: [Crypto Rep Dr 2.docx](Crypto%20Rep%20Dr%202.docx) — Complete technical specification, threat modeling, architecture diagrams, and academic findings.
-- **Conference Presentation Poster**: [user_formatted_poster.pptx](user_formatted_poster.pptx) — High-impact presentation poster formatted for academic and industrial review.
-- **Poster Visual Preview**: [user_formatted_poster.png](user_formatted_poster.png) — High-resolution rendered preview of the conference poster.
+
 - **End-to-End Verification Report**: [END_TO_END_TEST_REPORT.md](END_TO_END_TEST_REPORT.md) — Detailed execution log of the 20-step verification suite.
 - **Security Architecture & Threat Model**: [SECURITY.md](SECURITY.md) — Comprehensive cryptographic specifications and vulnerability mitigation documentation.
 - **Project Roadmap & Implementation Plan**: [PROJECT_PLAN.md](PROJECT_PLAN.md) — Milestone tracking and engineering deliverables.
