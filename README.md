@@ -398,8 +398,12 @@ python scripts/verify_e2e_live.py
 
 This project is licensed under the MIT License.
 
-##Contributors
+## Contributors
 
 This project was collaboratively developed by:
+
+
 Khushidx (https://github.com/Khushidx)
+
+
 Anushka Roy (https://github.com/royanushka2307)
