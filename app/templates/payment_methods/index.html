@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Methods — VaultPay{% endblock %}
+{% block breadcrumb %}Payment Methods{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1 class="page-title">Payment Methods</h1>
+        <p class="page-subtitle">
+            Tokenized funding sources secured with AES-256-GCM metadata encryption at rest.
+        </p>
+    </div>
+    <div class="page-actions" style="display: flex; gap: var(--sp-2); flex-wrap: wrap;">
+        <a href="{{ url_for('payment_methods.new_method') }}" class="btn btn-secondary btn-sm">
+            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Funding Source
+        </a>
+        <a href="{{ url_for('chameleon_lab.index', action='create') }}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/>
+                <path d="M12 3a9 9 0 0 1 9 9h-9V3z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            + Issue Chameleon Card
+        </a>
+    </div>
+</div>
+
+<!-- Security Architecture Information Box -->
+<div class="card card-accent-left mb-6" role="region" aria-label="Security invariant details">
+    <div style="display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3);">
+        <svg class="svg-icon" viewBox="0 0 24 24" style="color: var(--accent);" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+            Tokenization &amp; Storage Invariants
+        </h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-3); font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• Tokenized IDs</strong>
+            Payment sources are represented by opaque tokens (<code>tok_...</code>), keeping card numbers off server disks.
+        </div>
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• Zero CVV Policy</strong>
+            Card security codes (CVV/CVC) are never stored, requested, or persisted under any circumstance.
+        </div>
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• Masked Display</strong>
+            Only non-sensitive identifiers and last 4 digits are retained (e.g. <code>•••• 4242</code>).
+        </div>
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• AES-256-GCM AEAD</strong>
+            Metadata is encrypted at rest using fresh 12-byte nonces and authenticated with 16-byte GMAC tags.
+        </div>
+    </div>
+</div>
+
+<!-- Section: Primary Funding Sources -->
+<div style="margin-bottom: var(--sp-4);">
+    <h2 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.35rem 0;">
+        Primary Funding Sources
+    </h2>
+    <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+        Encrypted cards and accounts used to fund your VaultPay balance.
+    </p>
+</div>
+
+{% if methods %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-5); margin-bottom: 2.5rem;">
+        {% for method in methods %}
+            <div class="virtual-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-3);">
+                    <div style="display: flex; align-items: center; gap: var(--sp-2);">
+                        <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--accent);">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <span class="card-type-label">
+                            {% if 'VISA' in method.method_type %}
+                                Visa Card
+                            {% elif 'MASTERCARD' in method.method_type %}
+                                Mastercard
+                            {% elif 'BANK' in method.method_type %}
+                                Bank Account
+                            {% else %}
+                                {{ method.method_type }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% if method.is_default %}
+                        <span class="status-pill status-pill-success" style="font-size: 0.65rem; padding: 0.1rem 0.5rem;">
+                            DEFAULT
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="card-chip"></div>
+
+                <div class="card-nick">
+                    {{ method.name }}
+                </div>
+
+                <div class="card-identifier">
+                    {{ method.masked_identifier }}
+                </div>
+
+                <div class="card-token-section">
+                    <span class="card-token-label">Opaque Token ID</span>
+                    <span class="card-token-value">{{ method.token_id }}</span>
+                </div>
+
+                <div class="card-footer">
+                    <a href="{{ url_for('payment_methods.reveal', method_id=method.id) }}" class="btn btn-secondary btn-sm">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Reveal Metadata
+                    </a>
+                    <form method="POST" action="{{ url_for('payment_methods.delete', method_id=method.id) }}" style="display: inline;" onsubmit="return confirm('Remove this payment method? This action cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Remove {{ method.name }}">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Remove
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state card" role="status" style="margin-bottom: 2.5rem;">
+        <svg class="empty-icon svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+        <p class="empty-title">No Funding Sources Configured</p>
+        <p class="empty-desc">
+            Add a Visa, Mastercard, or verified Bank Account to manage your funding sources in VaultPay.
+        </p>
+        <a href="{{ url_for('payment_methods.new_method') }}" class="btn">
+            + Add Funding Source
+        </a>
+    </div>
+{% endif %}
+
+<!-- SECTION: CHAMELEON VIRTUAL CARDS (ACTIVE DEFENSE) -->
+<div style="border-top: 1px solid var(--border-subtle); padding-top: 1.75rem; margin-top: 1rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+                <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0;">
+                    Chameleon Virtual Cards &amp; Canary Tripwires
+                </h2>
+                <span class="badge" style="background: #17202A; color: #FFFFFF; font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: var(--radius-sm);">
+                    ACTIVE DEFENSE
+                </span>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0; max-width: 760px; line-height: 1.5;">
+                Single-use disposable virtual cards locked to specific merchants. After the authorized purchase, the card balance drops to ₹0 and morphs into an active honeypot tripwire to detect merchant database breaches months later.
+            </p>
+        </div>
+
+        <a href="{{ url_for('chameleon_lab.index', action='create') }}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="16"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            + Issue Chameleon Card
+        </a>
+    </div>
+
+    {% if chameleon_cards %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-4);">
+            {% for c in chameleon_cards %}
+                <div class="card" style="padding: 1.25rem; border-left: 4px solid {% if c.state == 'ACTIVE_BURNER' %}var(--success){% elif c.state == 'ARMED_CANARY' %}var(--warning){% elif c.state == 'TRIPPED' %}var(--danger){% else %}var(--text-dim){% endif %}; background: var(--bg-surface);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                        <div>
+                            <strong style="font-size: 0.95rem; color: var(--text-primary); display: block;">{{ c.card_name }}</strong>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Bound to: <code>{{ c.merchant_tag }}</code></span>
+                        </div>
+                        <span class="status-pill {% if c.state == 'ACTIVE_BURNER' %}status-pill-success{% elif c.state == 'ARMED_CANARY' %}status-pill-warning{% elif c.state == 'TRIPPED' %}status-pill-danger{% else %}status-pill{% endif %}" style="font-size: 0.65rem;">
+                            {{ c.state }}
+                        </span>
+                    </div>
+
+                    <div style="font-family: var(--font-mono); font-size: 1.05rem; letter-spacing: 0.08em; color: var(--text-primary); margin-bottom: 0.75rem;">
+                        {{ c.masked_pan }}
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.75rem; background: var(--bg-surface-2); padding: 0.5rem 0.65rem; border-radius: var(--radius-sm); margin-bottom: 0.85rem;">
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">SPEND LIMIT</span>
+                            <strong style="color: var(--accent); font-family: var(--font-mono);">₹{{ "%.2f"|format(c.initial_spend_limit_cents / 100.0) }}</strong>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted); display: block; font-size: 0.68rem;">REMAINING</span>
+                            <strong style="font-family: var(--font-mono); color: {% if c.remaining_balance_cents > 0 %}var(--success){% else %}var(--text-muted){% endif %};">₹{{ "%.2f"|format(c.remaining_balance_cents / 100.0) }}</strong>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; pt: 0.5rem;">
+                        <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">
+                            Token: {{ c.card_token[:12] }}...
+                        </span>
+                        <a href="{{ url_for('chameleon_lab.index', card_id=c.id) }}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+                            Open in Lab &rarr;
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card" style="padding: 1.5rem; text-align: center; background: var(--bg-surface-2); border: 1px dashed var(--border-default);">
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                No Chameleon Cards provisioned yet. Create a single-use card before buying from new, unverified, or high-risk online merchants.
+            </p>
+            <a href="{{ url_for('chameleon_lab.index', action='create') }}" class="btn btn-primary btn-sm">
+                + Issue Your First Chameleon Card
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

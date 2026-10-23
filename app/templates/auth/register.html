@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account — VaultPay{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper" style="align-items: flex-start; padding-top: var(--sp-10);">
+    <div class="auth-card" style="max-width: 460px;">
+
+        <!-- Logo -->
+        <div class="auth-logo">
+            <div class="auth-logo-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </div>
+            <span style="font-size: 1.2rem; font-weight: 700; letter-spacing: -0.03em; color: var(--text-primary);">
+                Vault<span style="color: var(--accent);">Pay</span>
+            </span>
+        </div>
+
+        <h1 class="auth-heading">Create your account</h1>
+        <p class="auth-subheading">Secured with Salted SHA-256 — 256-bit cryptographically secure random salt</p>
+
+        <div class="card">
+            <form method="POST"
+                  action="{{ url_for('auth.register') }}"
+                  novalidate
+                  aria-label="Account registration form">
+                {{ form.csrf_token }}
+
+                <!-- Username -->
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    {{ form.username(
+                        class="form-control",
+                        placeholder="e.g. alice_student",
+                        autocomplete="username",
+                        id="username"
+                    ) }}
+                    <span class="form-hint">3–30 characters: letters, numbers, underscores</span>
+                    {% if form.username.errors %}
+                        <span class="form-error" role="alert">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            {{ form.username.errors[0] }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    {{ form.email(
+                        class="form-control",
+                        placeholder="alice@example.edu",
+                        autocomplete="email",
+                        id="email",
+                        type="email"
+                    ) }}
+                    {% if form.email.errors %}
+                        <span class="form-error" role="alert">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            {{ form.email.errors[0] }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password_reg" class="form-label">Password</label>
+                    <div class="pw-input-wrap">
+                        {{ form.password(
+                            class="form-control",
+                            placeholder="••••••••••••",
+                            autocomplete="new-password",
+                            id="password_reg"
+                        ) }}
+                        <button type="button"
+                                class="pw-toggle"
+                                id="pwToggleReg"
+                                aria-label="Show password"
+                                aria-controls="password_reg">
+                            <svg class="svg-icon pw-eye-open" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg class="svg-icon pw-eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <span class="form-hint">Min 8 characters — uppercase, lowercase, and a number</span>
+                    {% if form.password.errors %}
+                        <span class="form-error" role="alert">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            {{ form.password.errors[0] }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Confirm Password -->
+                <div class="form-group">
+                    <label for="confirm_password" class="form-label">Confirm Password</label>
+                    <div class="pw-input-wrap">
+                        {{ form.confirm_password(
+                            class="form-control",
+                            placeholder="••••••••••••",
+                            autocomplete="new-password",
+                            id="confirm_password"
+                        ) }}
+                        <button type="button"
+                                class="pw-toggle"
+                                id="pwToggleConf"
+                                aria-label="Show confirm password"
+                                aria-controls="confirm_password">
+                            <svg class="svg-icon pw-eye-open" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg class="svg-icon pw-eye-closed" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
+                    {% if form.confirm_password.errors %}
+                        <span class="form-error" role="alert">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            {{ form.confirm_password.errors[0] }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div style="margin-top: var(--sp-6);">
+                    <button type="submit" class="btn btn-full" style="padding: 0.8rem; font-size: 0.95rem;">
+                        Create Secure Account
+                    </button>
+                </div>
+            </form>
+
+            <div class="auth-footer">
+                <span>Already have an account?</span>
+                <a href="{{ url_for('auth.login') }}">Sign In &rarr;</a>
+            </div>
+        </div>
+
+        <!-- Security note -->
+        <div class="auth-security-note" role="note">
+            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--accent); flex-shrink:0;">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span>Passwords are never stored in plaintext. Salted SHA-256 hash stored only.</span>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    initPwToggle('password_reg', 'pwToggleReg');
+    initPwToggle('confirm_password', 'pwToggleConf');
+</script>
+{% endblock %}

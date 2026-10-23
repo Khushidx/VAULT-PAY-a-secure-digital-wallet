@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Internal Error (500) — VaultPay{% endblock %}
+{% block breadcrumb %}500 Error{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 540px; margin: 4rem auto; text-align: center; padding: var(--sp-8) var(--sp-6);" role="alert" aria-labelledby="error-500-heading">
+    <div style="font-size: 3.5rem; font-family: var(--font-mono); color: var(--danger-text); font-weight: 800; line-height: 1; margin-bottom: var(--sp-3);" aria-hidden="true">
+        500
+    </div>
+    <h1 id="error-500-heading" style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-3);">
+        Internal Server Error
+    </h1>
+    <p class="card-body" style="margin-bottom: var(--sp-6); color: var(--text-secondary); max-width: 440px; margin-left: auto; margin-right: auto;">
+        An unexpected internal error occurred. For security reasons, detailed system error logs are preserved server-side to prevent information disclosure.
+    </p>
+    <a href="{{ url_for('main.index') }}" class="btn">
+        Return to Home
+    </a>
+</div>
+{% endblock %}

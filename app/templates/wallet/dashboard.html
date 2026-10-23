@@ -1,0 +1,689 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — VaultPay{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- ===== PAGE HEADER ===== -->
+<div class="page-header">
+    <div class="page-title-group">
+        <h1 class="page-title">
+            Wallet Dashboard
+            <span class="status-pill status-pill-success"
+                  style="font-size: 0.65rem; vertical-align: middle; margin-left: 0.5rem;"
+                  aria-label="Account active">
+                <span class="status-dot" aria-hidden="true"></span>
+                Active
+            </span>
+        </h1>
+        <p class="page-subtitle">
+            Welcome back, <strong style="color: var(--text-primary);">{{ user.username }}</strong>.
+            Review your balance and recent activity.
+        </p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('wallet.transfer') }}" class="btn" aria-label="Send money">
+            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Send Money
+        </a>
+        <a href="{{ url_for('wallet.deposit') }}" class="btn btn-secondary" aria-label="Add money">
+            <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Money
+        </a>
+    </div>
+</div>
+
+<!-- ===== BALANCE HERO CARD ===== -->
+<div class="balance-card" id="balanceHeroCard" role="region" aria-label="Wallet balance">
+    <canvas id="balanceCursorCanvas" class="balance-cursor-canvas"></canvas>
+    <div id="balanceCursorGlow" class="balance-cursor-glow"></div>
+    <div class="balance-card-inner">
+        <div>
+            <div class="balance-label">
+                <span>Available Balance</span>
+                <span class="status-pill status-pill-info" style="font-size: 0.62rem; padding: 0.1rem 0.45rem;">INR</span>
+                <button type="button" id="balanceToggleBtn" class="btn btn-ghost btn-sm" aria-label="Hide balance" title="Toggle balance display" style="padding: 0.15rem 0.4rem; height: auto; min-height: unset; color: var(--text-muted); line-height: 1;" onclick="toggleBalanceVisibility()">
+                    <svg id="balanceEyeOpen" class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg id="balanceEyeClosed" class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true" style="display: none; width: 14px; height: 14px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+            </div>
+            <div class="balance-amount" id="balanceDisplay" data-actual="{{ wallet.formatted_balance }}" aria-label="Balance: {{ wallet.formatted_balance }}">
+                {{ wallet.formatted_balance }}
+            </div>
+            <div class="balance-meta">
+                <span class="balance-ledger-tag" aria-label="Ledger: {{ wallet.balance_cents }} paise">
+                    Ledger: {{ wallet.balance_cents }} paise
+                </span>
+                <span class="status-pill status-pill-success" style="font-size: 0.65rem; padding: 0.15rem 0.5rem;">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    No Floating-Point Errors
+                </span>
+            </div>
+        </div>
+
+        <div class="balance-actions">
+            <div class="balance-account-id" aria-label="Account ID {{ wallet.id }}">
+                <span>Account ID</span>
+                <span>#{{ wallet.id }}</span>
+            </div>
+            <div style="display: flex; gap: var(--sp-2);">
+                <a href="{{ url_for('wallet.deposit') }}" class="btn btn-secondary btn-sm">Deposit &rarr;</a>
+                <a href="{{ url_for('wallet.transfer') }}" class="btn btn-secondary btn-sm">Transfer &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MAIN CONTENT GRID ===== -->
+<div class="grid grid-2-1" style="gap: var(--sp-6);">
+
+    <!-- ===== LEFT COLUMN ===== -->
+    <div style="display: flex; flex-direction: column; gap: var(--sp-6);">
+
+        <!-- ===== LIVE FINANCIAL ACTIVITY & LEDGER TRAJECTORY CHART ===== -->
+        <div class="live-chart-wrap" role="region" aria-label="Ledger activity trajectory chart">
+            <div class="live-chart-header">
+                <div class="live-chart-title">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--accent);">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    <span>Ledger Activity Trajectory</span>
+                    <span class="status-pill status-pill-success" style="font-size: 0.62rem; padding: 0.1rem 0.4rem;">
+                        <span class="status-dot"></span> Verified Ledger
+                    </span>
+                </div>
+
+                {% if transactions %}
+                    {% set ns = namespace(inflow=0, outflow=0, in_count=0, out_count=0) %}
+                    {% for tx in transactions %}
+                        {% if tx.transaction_type in ['DEPOSIT', 'TRANSFER_IN'] %}
+                            {% set ns.inflow = ns.inflow + tx.amount_cents %}
+                            {% set ns.in_count = ns.in_count + 1 %}
+                        {% elif tx.transaction_type == 'TRANSFER_OUT' %}
+                            {% set ns.outflow = ns.outflow + (tx.amount_cents | abs) %}
+                            {% set ns.out_count = ns.out_count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                    <div class="live-chart-stats">
+                        <span style="color: var(--success-text);">
+                            Inflow ({{ ns.in_count }}): +₹{{ "%.2f"|format(ns.inflow / 100) }}
+                        </span>
+                        <span style="color: var(--danger-text);">
+                            Outflow ({{ ns.out_count }}): -₹{{ "%.2f"|format(ns.outflow / 100) }}
+                        </span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="chart-svg-container" id="chartSvgWrapper">
+                <svg id="dashboardActivityChart" class="chart-svg" viewBox="0 0 680 160" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="inflowGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#34D399" stop-opacity="0.35"/>
+                            <stop offset="100%" stop-color="#34D399" stop-opacity="0.0"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Coordinate Grid Lines -->
+                    <line x1="45" y1="25" x2="670" y2="25" class="chart-grid" />
+                    <text id="chartYMax" x="40" y="28" text-anchor="end" class="chart-axis-text">MAX</text>
+
+                    <line x1="45" y1="75" x2="670" y2="75" class="chart-grid" />
+                    <text id="chartYMid" x="40" y="78" text-anchor="end" class="chart-axis-text">MID</text>
+
+                    <line x1="45" y1="125" x2="670" y2="125" class="chart-grid" />
+                    <text x="40" y="128" text-anchor="end" class="chart-axis-text">₹0.00</text>
+
+                    <line x1="45" y1="125" x2="670" y2="125" stroke="var(--border-default)" stroke-width="1.5" />
+
+                    <!-- Chart Paths & Points rendered dynamically via client-side script from real transaction data -->
+                    <g id="chartDynamicPaths"></g>
+                    <g id="chartDynamicPoints"></g>
+
+                    <!-- Interactive Cursor Scanning Laser Crosshair & Reticle -->
+                    <line id="chartCursorScanLine" x1="0" y1="20" x2="0" y2="130" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3" opacity="0" pointer-events="none" style="transition: opacity 0.15s ease;" />
+                    <g id="chartCursorReticle" opacity="0" pointer-events="none" style="transition: opacity 0.15s ease;">
+                        <circle id="reticleHalo" cx="0" cy="0" r="11" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.6">
+                            <animate attributeName="r" values="9;14;9" dur="1.8s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.7;0.2;0.7" dur="1.8s" repeatCount="indefinite"/>
+                        </circle>
+                        <circle id="reticleCore" cx="0" cy="0" r="5" fill="var(--accent)" stroke="var(--bg-surface)" stroke-width="2"/>
+                    </g>
+                </svg>
+
+                <!-- Floating Tooltip -->
+                <div id="chartTooltip" class="chart-tooltip-box"></div>
+            </div>
+        </div>
+
+        <!-- ===== RECENT TRANSACTIONS ===== -->
+        <div class="card" style="padding: 0; overflow: hidden;" role="region" aria-label="Recent transactions">
+            <div class="card-header" style="padding: var(--sp-5) var(--sp-6); border-radius: 0;">
+                <h2 class="card-title">
+                    <svg class="svg-icon card-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    Recent Transactions
+                </h2>
+                <a href="{{ url_for('wallet.history') }}" class="section-action" aria-label="View all transaction history">
+                    View All
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </a>
+            </div>
+
+            {% if transactions %}
+                <div class="tx-table-wrap" style="border-radius: 0; border: none; border-top: 1px solid var(--border-subtle);">
+                <table class="tx-table" aria-label="Recent transactions">
+                    <thead>
+                        <tr>
+                            <th scope="col">Date (UTC)</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Description</th>
+                            <th scope="col" style="text-align:right;">Amount</th>
+                            <th scope="col" style="text-align:center;">Status</th>
+                            <th scope="col" style="text-align:center; width: 50px;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in transactions %}
+                            <tr>
+                                <td style="color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; font-family: var(--font-mono);">
+                                    <time datetime="{{ tx.created_at.isoformat() }}">
+                                        {{ tx.created_at.strftime('%b %d, %H:%M') }}
+                                    </time>
+                                </td>
+                                <td>
+                                    {% if tx.transaction_type == 'DEPOSIT' %}
+                                        <span class="tx-type-badge tx-deposit" aria-label="Deposit">
+                                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                            Deposit
+                                        </span>
+                                    {% elif tx.transaction_type == 'TRANSFER_OUT' %}
+                                        <span class="tx-type-badge tx-out" aria-label="Transfer out">
+                                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                            Sent
+                                        </span>
+                                    {% elif tx.transaction_type == 'TRANSFER_IN' %}
+                                        <span class="tx-type-badge tx-in" aria-label="Transfer in">
+                                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                                            Received
+                                        </span>
+                                    {% else %}
+                                        <span class="tx-type-badge" style="background: var(--bg-surface-3); border-color: var(--border-default); color: var(--text-secondary);">
+                                            {{ tx.transaction_type }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td style="color: var(--text-primary); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem;">
+                                    {{ tx.description or '—' }}
+                                </td>
+                                <td class="{{ 'tx-amount-positive' if tx.amount_cents > 0 else 'tx-amount-negative' }}"
+                                    aria-label="{{ '+' if tx.amount_cents > 0 else '' }}{{ tx.formatted_amount }}">
+                                    {{ '+' if tx.amount_cents > 0 else '' }}{{ tx.formatted_amount }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% if tx.status == 'COMPLETED' %}
+                                        <span class="status-pill status-pill-success" aria-label="Completed">
+                                            <span class="status-dot" aria-hidden="true"></span>
+                                            Done
+                                        </span>
+                                    {% else %}
+                                        <span class="status-pill status-pill-danger" aria-label="{{ tx.status }}">
+                                            {{ tx.status }}
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td style="text-align: center;">
+                                    <form method="POST" action="{{ url_for('wallet.delete_transaction', transaction_id=tx.id) }}" style="display: inline;" onsubmit="return confirm('Delete this transaction from history?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn-delete-tx" aria-label="Delete transaction {{ tx.reference_id }}" title="Delete transaction">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <polyline points="3 6 5 6 21 6"/>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                                <line x1="10" y1="11" x2="10" y2="17"/>
+                                                <line x1="14" y1="11" x2="14" y2="17"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state" role="status">
+                <svg class="empty-icon svg-icon" style="width: 40px; height: 40px;" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                    <rect x="9" y="3" width="6" height="4" rx="1"/>
+                </svg>
+                <p class="empty-title">No Transactions Yet</p>
+                <p class="empty-desc">Fund your account to begin making transfers and deposits.</p>
+                <a href="{{ url_for('wallet.deposit') }}" class="btn">Deposit Funds</a>
+            </div>
+        {% endif %}
+    </div>
+    </div>
+
+    <!-- ===== SIDEBAR PANEL ===== -->
+    <div style="display: flex; flex-direction: column; gap: var(--sp-5);">
+
+        <!-- Payment Methods Card -->
+        <div class="card" role="region" aria-label="Payment methods">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <svg class="svg-icon card-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    Payment Methods
+                </h2>
+                <a href="{{ url_for('payment_methods.new_method') }}"
+                   class="btn btn-secondary btn-sm"
+                   aria-label="Add a new payment method">
+                    + Add
+                </a>
+            </div>
+
+            {% if payment_methods %}
+                <div style="display: flex; flex-direction: column; gap: var(--sp-3);">
+                    {% for pm in payment_methods[:3] %}
+                        <div style="background: var(--bg-surface-2); padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="font-size: 0.82rem; display: block; color: var(--text-primary); margin-bottom: 2px;">
+                                    {{ pm.name }}
+                                </strong>
+                                <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--info-text);">
+                                    {{ pm.masked_identifier }}
+                                </span>
+                            </div>
+                            <a href="{{ url_for('payment_methods.reveal', method_id=pm.id) }}"
+                               class="btn btn-ghost btn-sm"
+                               aria-label="Reveal details for {{ pm.name }}">
+                                <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div style="margin-top: var(--sp-4); text-align: right;">
+                    <a href="{{ url_for('payment_methods.index') }}" class="section-action">
+                        Manage All
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                    </a>
+                </div>
+            {% else %}
+                <div class="empty-state" style="padding: var(--sp-6) var(--sp-2);" role="status">
+                    <svg class="empty-icon svg-icon" style="width: 32px; height: 32px;" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    <p class="empty-title" style="font-size: 0.85rem;">No Payment Methods</p>
+                    <a href="{{ url_for('payment_methods.new_method') }}" class="btn btn-secondary btn-sm">
+                        + Add Method
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Security Card -->
+        <div class="card card-accent-left" role="region" aria-label="Security status">
+            <div style="display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-2);">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--accent);">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <strong style="font-size: 0.88rem; color: var(--text-primary);">Cryptographic Controls</strong>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.55;">
+                All ledger updates are atomic. Sensitive payment metadata is encrypted with AES-256-GCM at rest.
+            </p>
+            <div style="margin-top: var(--sp-3);">
+                <a href="{{ url_for('auth.profile') }}" class="section-action" style="font-size: 0.78rem;">
+                    View Security Profile &rarr;
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Links Card -->
+        <div class="card" style="padding: var(--sp-4);" role="navigation" aria-label="Quick navigation">
+            <h3 style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: var(--sp-3);">
+                Quick Links
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: var(--sp-1);">
+                <a href="{{ url_for('wallet.history') }}" class="sidebar-link" style="font-size: 0.82rem; padding: var(--sp-2) var(--sp-3);">
+                    <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                    Full Transaction History
+                </a>
+                <a href="{{ url_for('security_lab.index') }}" class="sidebar-link" style="font-size: 0.82rem; padding: var(--sp-2) var(--sp-3);">
+                    <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    Security Lab
+                </a>
+                <a href="{{ url_for('main.crypto_architecture') }}" class="sidebar-link" style="font-size: 0.82rem; padding: var(--sp-2) var(--sp-3);">
+                    <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                    </svg>
+                    Architecture Docs
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function toggleBalanceVisibility() {
+    var el = document.getElementById('balanceDisplay');
+    var openIcon = document.getElementById('balanceEyeOpen');
+    var closedIcon = document.getElementById('balanceEyeClosed');
+    var btn = document.getElementById('balanceToggleBtn');
+    if (!el || !openIcon || !closedIcon || !btn) return;
+    var isHidden = el.getAttribute('data-hidden') === 'true';
+    if (isHidden) {
+        el.textContent = el.getAttribute('data-actual');
+        el.setAttribute('data-hidden', 'false');
+        openIcon.style.display = 'inline-block';
+        closedIcon.style.display = 'none';
+        btn.setAttribute('aria-label', 'Hide balance');
+        try { localStorage.setItem('vaultpay_balance_masked', 'false'); } catch (e) {}
+    } else {
+        el.textContent = '₹ ••••••';
+        el.setAttribute('data-hidden', 'true');
+        openIcon.style.display = 'none';
+        closedIcon.style.display = 'inline-block';
+        btn.setAttribute('aria-label', 'Show balance');
+        try { localStorage.setItem('vaultpay_balance_masked', 'true'); } catch (e) {}
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        if (localStorage.getItem('vaultpay_balance_masked') === 'true') {
+            toggleBalanceVisibility();
+        }
+    } catch (e) {}
+
+    // ===== 1. INTERACTIVE CURSOR CRYPTOGRAPHIC PARTICLE CANVAS & 3D TILT =====
+    (function() {
+        var card = document.getElementById('balanceHeroCard');
+        var canvas = document.getElementById('balanceCursorCanvas');
+        var glow = document.getElementById('balanceCursorGlow');
+        if (!card || !canvas) return;
+
+        var ctx = canvas.getContext('2d');
+        var width = 0;
+        var height = 0;
+        var dpr = window.devicePixelRatio || 1;
+        var mouse = { x: null, y: null, active: false };
+        var particles = [];
+        var PARTICLE_COUNT = 36;
+
+        function resizeCanvas() {
+            var rect = card.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        for (var i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push({
+                x: Math.random() * (width || 600),
+                y: Math.random() * (height || 200),
+                vx: (Math.random() - 0.5) * 0.45,
+                vy: (Math.random() - 0.5) * 0.45,
+                radius: Math.random() * 1.8 + 1.2,
+                baseAlpha: Math.random() * 0.35 + 0.2
+            });
+        }
+
+        card.addEventListener('mousemove', function(e) {
+            var rect = card.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            mouse.active = true;
+
+            if (glow) {
+                glow.style.opacity = '1';
+                glow.style.left = mouse.x + 'px';
+                glow.style.top = mouse.y + 'px';
+            }
+
+            var normX = (mouse.x / width) - 0.5;
+            var normY = (mouse.y / height) - 0.5;
+            card.style.transform = 'perspective(900px) rotateX(' + (-normY * 4.5).toFixed(2) + 'deg) rotateY(' + (normX * 4.5).toFixed(2) + 'deg)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            mouse.active = false;
+            mouse.x = null;
+            mouse.y = null;
+            if (glow) glow.style.opacity = '0';
+            card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)';
+        });
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+
+                if (mouse.active && mouse.x !== null) {
+                    var dx = mouse.x - p.x;
+                    var dy = mouse.y - p.y;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 130) {
+                        var force = (130 - dist) / 130;
+                        p.x += (dx / dist) * force * 0.75;
+                        p.y += (dy / dist) * force * 0.75;
+
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.strokeStyle = 'rgba(5, 150, 105, ' + (force * 0.45).toFixed(2) + ')';
+                        ctx.lineWidth = 0.9;
+                        ctx.stroke();
+                    }
+                }
+
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 0 || p.x > width) p.vx *= -1;
+                if (p.y < 0 || p.y > height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = mouse.active ? 'rgba(5, 150, 105, 0.75)' : 'rgba(100, 116, 139, ' + p.baseAlpha + ')';
+                ctx.fill();
+
+                for (var j = i + 1; j < particles.length; j++) {
+                    var p2 = particles[j];
+                    var ndx = p.x - p2.x;
+                    var ndy = p.y - p2.y;
+                    var ndist = Math.sqrt(ndx * ndx + ndy * ndy);
+                    if (ndist < 80) {
+                        var nAlpha = (1 - ndist / 80) * (mouse.active ? 0.35 : 0.15);
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = 'rgba(5, 150, 105, ' + nAlpha.toFixed(2) + ')';
+                        ctx.lineWidth = 0.7;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(animateParticles);
+        }
+        requestAnimationFrame(animateParticles);
+    })();
+
+    // ===== 2. INTERACTIVE REAL DATA CHART WITH CURSOR TRACKING RETICLE =====
+    (function() {
+        var rawTx = [
+            {% for tx in transactions %}
+            {
+                type: {{ tx.transaction_type | tojson }},
+                amount_cents: {{ tx.amount_cents }},
+                formatted_amount: {{ tx.formatted_amount | tojson }},
+                description: {{ (tx.description or 'Transaction') | tojson }},
+                date: {{ tx.created_at.strftime('%b %d, %H:%M') | tojson }},
+                status: {{ tx.status | tojson }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        var pathsGroup = document.getElementById('chartDynamicPaths');
+        var pointsGroup = document.getElementById('chartDynamicPoints');
+        var tooltip = document.getElementById('chartTooltip');
+        var wrapper = document.getElementById('chartSvgWrapper');
+        var yMaxLabel = document.getElementById('chartYMax');
+        var yMidLabel = document.getElementById('chartYMid');
+        var scanLine = document.getElementById('chartCursorScanLine');
+        var reticle = document.getElementById('chartCursorReticle');
+        var svgEl = document.getElementById('dashboardActivityChart');
+
+        if (!pathsGroup || !pointsGroup) return;
+
+        if (!rawTx || rawTx.length === 0) {
+            if (yMaxLabel) yMaxLabel.textContent = '₹100';
+            if (yMidLabel) yMidLabel.textContent = '₹50';
+            pathsGroup.innerHTML = '<path d="M 45 125 L 670 125" stroke="var(--border-strong)" stroke-width="1.5" stroke-dasharray="6 6" fill="none" />';
+            return;
+        }
+
+        var txs = rawTx.slice().reverse();
+        var values = txs.map(function(t) { return Math.abs(t.amount_cents) / 100; });
+        var maxVal = Math.max.apply(null, values);
+        if (maxVal <= 0) maxVal = 100;
+        maxVal = Math.ceil(maxVal * 1.25);
+
+        if (yMaxLabel) yMaxLabel.textContent = '₹' + maxVal.toFixed(0);
+        if (yMidLabel) yMidLabel.textContent = '₹' + (maxVal / 2).toFixed(0);
+
+        var startX = 65;
+        var endX = 650;
+        var stepX = txs.length > 1 ? (endX - startX) / (txs.length - 1) : 0;
+        var baseY = 125;
+        var topY = 25;
+
+        var coords = [];
+        for (var i = 0; i < txs.length; i++) {
+            var x = txs.length === 1 ? (startX + endX) / 2 : startX + i * stepX;
+            var val = Math.abs(txs[i].amount_cents) / 100;
+            var y = baseY - (val / maxVal) * (baseY - topY);
+            coords.push({ x: x, y: y, tx: txs[i] });
+        }
+
+        var pathD = 'M ' + coords[0].x.toFixed(1) + ' ' + coords[0].y.toFixed(1);
+        for (var j = 1; j < coords.length; j++) {
+            var prev = coords[j - 1];
+            var curr = coords[j];
+            var midX = ((prev.x + curr.x) / 2).toFixed(1);
+            pathD += ' C ' + midX + ' ' + prev.y.toFixed(1) + ', ' + midX + ' ' + curr.y.toFixed(1) + ', ' + curr.x.toFixed(1) + ' ' + curr.y.toFixed(1);
+        }
+
+        var areaD = pathD + ' L ' + coords[coords.length - 1].x.toFixed(1) + ' ' + baseY + ' L ' + coords[0].x.toFixed(1) + ' ' + baseY + ' Z';
+
+        pathsGroup.innerHTML = '<path d="' + areaD + '" class="chart-area-inflow" />' +
+                               '<path d="' + pathD + '" class="chart-line-inflow" />';
+
+        var pointsHtml = '';
+        for (var k = 0; k < coords.length; k++) {
+            var pt = coords[k];
+            var isOutflow = pt.tx.type === 'TRANSFER_OUT';
+            var ptClass = isOutflow ? 'chart-point chart-point-outflow' : 'chart-point';
+            pointsHtml += '<circle class="' + ptClass + '" cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" r="5" data-idx="' + k + '" />';
+        }
+        pointsGroup.innerHTML = pointsHtml;
+
+        // Cursor-Reactive Tracking Line & Reticle Listener
+        if (wrapper && svgEl && scanLine && reticle) {
+            wrapper.addEventListener('mousemove', function(e) {
+                var svgRect = svgEl.getBoundingClientRect();
+                var relX = e.clientX - svgRect.left;
+                var scaleX = 680 / svgRect.width;
+                var scaleY = svgRect.height / 160;
+
+                var svgX = relX * scaleX;
+                if (svgX < startX || svgX > endX) {
+                    scanLine.style.opacity = '0';
+                    reticle.style.opacity = '0';
+                    if (tooltip) tooltip.style.opacity = '0';
+                    return;
+                }
+
+                // Interpolate Y value along curve
+                var targetY = baseY;
+                var closestPt = coords[0];
+                var minDiff = Infinity;
+
+                for (var s = 0; s < coords.length; s++) {
+                    var diff = Math.abs(coords[s].x - svgX);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestPt = coords[s];
+                    }
+                }
+
+                for (var seg = 0; seg < coords.length - 1; seg++) {
+                    var pA = coords[seg];
+                    var pB = coords[seg + 1];
+                    if (svgX >= pA.x && svgX <= pB.x) {
+                        var t = (svgX - pA.x) / (pB.x - pA.x);
+                        var smoothT = t * t * (3 - 2 * t);
+                        targetY = pA.y + (pB.y - pA.y) * smoothT;
+                        break;
+                    }
+                }
+
+                scanLine.setAttribute('x1', svgX);
+                scanLine.setAttribute('x2', svgX);
+                scanLine.style.opacity = '0.85';
+
+                reticle.setAttribute('transform', 'translate(' + svgX.toFixed(1) + ',' + targetY.toFixed(1) + ')');
+                reticle.style.opacity = '1';
+
+                if (tooltip && closestPt) {
+                    var isOut = closestPt.tx.type === 'TRANSFER_OUT';
+                    var sign = isOut ? '-' : '+';
+                    var color = isOut ? 'var(--danger-text)' : 'var(--success-text)';
+                    tooltip.innerHTML = '<div style="font-weight:700; color:' + color + '; font-family:var(--font-mono);">' + sign + closestPt.tx.formatted_amount + ' (' + closestPt.tx.type + ')</div>' +
+                                        '<div style="color:var(--text-secondary); margin-top:2px; font-size:11px;">' + closestPt.tx.description + '</div>' +
+                                        '<div style="color:var(--text-muted); font-size:10px; margin-top:3px; font-family:var(--font-mono);">' + closestPt.tx.date + ' · ' + closestPt.tx.status + '</div>';
+                    tooltip.style.opacity = '1';
+                    tooltip.style.left = (svgX / scaleX) + 'px';
+                    tooltip.style.top = (targetY * scaleY) + 'px';
+                }
+            });
+
+            wrapper.addEventListener('mouseleave', function() {
+                scanLine.style.opacity = '0';
+                reticle.style.opacity = '0';
+                if (tooltip) tooltip.style.opacity = '0';
+            });
+        }
+    })();
+});
+</script>
+{% endblock %}

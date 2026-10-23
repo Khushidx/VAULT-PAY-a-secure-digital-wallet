@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Cards Vault — VaultPay{% endblock %}
+{% block breadcrumb %}Cards Vault{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1 class="page-title">
+            <svg class="svg-icon" style="color: var(--accent); vertical-align: -2px; margin-right: 0.35rem;" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Sensitive Data Vault
+        </h1>
+        <p class="page-subtitle">
+            AES-256-GCM Authenticated Encryption for sensitive cardholder billing data at rest.
+        </p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('cards.new_card') }}" class="btn btn-sm">
+            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add Card
+        </a>
+    </div>
+</div>
+
+<div class="card card-accent-left mb-6" style="background: var(--bg-surface-2);" role="region" aria-label="Security Architecture">
+    <div style="display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-3);">
+        <svg class="svg-icon" style="color: var(--accent);" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <h3 style="font-size: 0.95rem; color: var(--text-primary); font-weight: 600; margin: 0;">Security Architecture in this View</h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--sp-3); font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;">
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• Zero CVV Policy</strong>
+            CVVs are never requested, stored, or accepted under any circumstances.
+        </div>
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• Zero Full Card Numbers</strong>
+            Only the last 4 digits are retained for masked display (<code>**** **** **** 1234</code>).
+        </div>
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• AES-256-GCM Encryption</strong>
+            Sensitive billing details are encrypted with a unique 12-byte random nonce and verified with a 16-byte authentication tag.
+        </div>
+        <div>
+            <strong style="color: var(--text-primary); display: block; margin-bottom: 2px;">• IDOR Boundary</strong>
+            You can only access cards belonging to your authenticated account (<code>session['user_id']</code>).
+        </div>
+    </div>
+</div>
+
+{% if cards %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--sp-5);">
+        {% for card in cards %}
+            <div class="virtual-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-3);">
+                    <span class="card-type-label" style="display: flex; align-items: center; gap: var(--sp-2);">
+                        <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--accent);">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        {{ card.card_brand }}
+                    </span>
+                    <span class="status-pill status-pill-info" style="font-size: 0.65rem;">
+                        AES-256-GCM
+                    </span>
+                </div>
+
+                <div class="card-chip"></div>
+
+                <div class="card-identifier">
+                    {{ card.masked_pan }}
+                </div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--text-muted); margin-bottom: var(--sp-4);">
+                    <div>
+                        <span class="card-token-label">Cardholder</span>
+                        <span style="color: var(--text-primary); font-weight: 600;">{{ card.cardholder_name }}</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="card-token-label">Expires</span>
+                        <span style="color: var(--text-primary); font-weight: 600; font-family: var(--font-mono);">{{ "%02d" % card.exp_month }}/{{ card.exp_year }}</span>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <a href="{{ url_for('cards.reveal', card_id=card.id) }}" class="btn btn-secondary btn-sm">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        Reveal Decrypted Details
+                    </a>
+                    <form method="POST" action="{{ url_for('cards.delete', card_id=card.id) }}" style="display: inline;" onsubmit="return confirm('Remove this card?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Delete card">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state card" role="status">
+        <svg class="empty-icon svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+        </svg>
+        <p class="empty-title">No Cards Saved</p>
+        <p class="empty-desc">
+            Save a card to observe how sensitive payment metadata is encrypted with AES-256-GCM before database storage.
+        </p>
+        <a href="{{ url_for('cards.new_card') }}" class="btn">
+            + Add Your First Card
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

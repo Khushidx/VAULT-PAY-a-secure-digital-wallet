@@ -1,0 +1,21 @@
+{
+    "include": [
+        "app",
+        "scripts",
+        "tests",
+        "run.py"
+    ],
+    "extraPaths": [
+        ".",
+        "app"
+    ],
+    "executionEnvironments": [
+        {
+            "root": "scripts",
+            "extraPaths": [
+                ".."
+            ]
+        }
+    ],
+    "reportMissingImports": "none"
+}

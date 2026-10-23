@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Add Card — VaultPay{% endblock %}
+{% block breadcrumb %}Add Card{% endblock %}
+
+{% block content %}
+<div style="max-width: 550px; margin: 0 auto;">
+
+    <a href="{{ url_for('cards.index') }}" class="back-link" aria-label="Back to cards vault">
+        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to Cards Vault
+    </a>
+
+    <div class="page-header" style="margin-top: 0;">
+        <div class="page-title-group">
+            <h1 class="page-title">Add Card</h1>
+            <p class="page-subtitle">
+                AES-256-GCM authenticated encryption of sensitive cardholder billing metadata.
+            </p>
+        </div>
+    </div>
+
+    <!-- Security Notice Card -->
+    <div class="card card-accent-left mb-5" style="background: var(--bg-surface-2);">
+        <h4 style="color: var(--text-primary); margin-bottom: 0.35rem; font-size: 0.92rem; font-weight: 600; display: flex; align-items: center; gap: var(--sp-2);">
+            <svg class="svg-icon" style="color: var(--accent); width: 16px; height: 16px;" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Secure Metadata Storage
+        </h4>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.55; margin-bottom: 0;">
+            This application enforces zero-knowledge boundaries: full card numbers and CVVs are never stored. Only the last 4 digits are kept for identification, and billing details are encrypted using AES-256-GCM.
+        </p>
+    </div>
+
+    <div class="card">
+        <form method="POST" action="{{ url_for('cards.new_card') }}" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.cardholder_name.label(class="form-label") }}
+                {{ form.cardholder_name(class="form-control", placeholder="e.g. Alice Student") }}
+                {% if form.cardholder_name.errors %}
+                    <span class="form-error" role="alert">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {{ form.cardholder_name.errors[0] }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4);">
+                <div class="form-group">
+                    {{ form.card_brand.label(class="form-label") }}
+                    {{ form.card_brand(class="form-control") }}
+                    {% if form.card_brand.errors %}
+                        <span class="form-error" role="alert">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.card_brand.errors[0] }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.last_four.label(class="form-label") }}
+                    {{ form.last_four(class="form-control", placeholder="4242", style="font-family: var(--font-mono); letter-spacing: 0.1em;") }}
+                    <span class="form-hint">
+                        Strictly 4 digits (e.g. 4242)
+                    </span>
+                    {% if form.last_four.errors %}
+                        <span class="form-error" role="alert">
+                            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ form.last_four.errors[0] }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4);">
+                <div class="form-group">
+                    {{ form.exp_month.label(class="form-label") }}
+                    {{ form.exp_month(class="form-control") }}
+                </div>
+
+                <div class="form-group">
+                    {{ form.exp_year.label(class="form-label") }}
+                    {{ form.exp_year(class="form-control") }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                {{ form.billing_details.label(class="form-label") }}
+                {{ form.billing_details(class="form-control", placeholder="e.g. 123 Campus Way, Bangalore") }}
+                <span class="form-hint">
+                    Will be encrypted using AES-256-GCM with a fresh 12-byte random nonce before database write.
+                </span>
+                {% if form.billing_details.errors %}
+                    <span class="form-error" role="alert">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {{ form.billing_details.errors[0] }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div style="margin-top: var(--sp-6);">
+                {{ form.submit(class="btn btn-full", style="padding: 0.8rem; font-size: 0.95rem;") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

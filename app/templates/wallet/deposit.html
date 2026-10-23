@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Deposit Funds — VaultPay{% endblock %}
+{% block breadcrumb %}Deposit Funds{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 0 auto;">
+
+    <a href="{{ url_for('wallet.dashboard') }}" class="back-link" aria-label="Back to dashboard">
+        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to Dashboard
+    </a>
+
+    <div class="page-header" style="margin-top: 0;">
+        <div class="page-title-group">
+            <h1 class="page-title">Deposit Funds</h1>
+            <p class="page-subtitle">
+                Funds are credited instantly and stored as <strong style="color: var(--text-secondary);">integer paise</strong>
+                — zero floating-point rounding.
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+
+        <!-- Current Balance Row -->
+        <div style="background: var(--bg-surface-2); border: 1px solid var(--border-subtle); padding: var(--sp-4) var(--sp-5); border-radius: var(--radius-md); margin-bottom: var(--sp-6); display: flex; justify-content: space-between; align-items: center;"
+             role="status" aria-label="Current balance: {{ wallet.formatted_balance }}">
+            <div>
+                <span style="color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; display: block; margin-bottom: 3px;">
+                    Current Balance
+                </span>
+                <span style="font-size: 1.45rem; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); font-variant-numeric: tabular-nums;">
+                    {{ wallet.formatted_balance }}
+                </span>
+            </div>
+            <span class="status-pill status-pill-success" aria-label="Account active">
+                <span class="status-dot" aria-hidden="true"></span>
+                INR Active
+            </span>
+        </div>
+
+        <!-- Deposit Form -->
+        <form method="POST"
+              action="{{ url_for('wallet.deposit') }}"
+              novalidate
+              aria-label="Deposit funds form">
+            {{ form.csrf_token }}
+
+            <!-- Amount Field -->
+            <div class="form-group">
+                <label for="amount" class="form-label">Deposit Amount (₹)</label>
+                <div class="amount-input-wrap">
+                    <span class="amount-prefix" aria-hidden="true">₹</span>
+                    {{ form.amount(
+                        class="form-control",
+                        placeholder="500.00",
+                        id="amount",
+                        inputmode="decimal",
+                        autocomplete="off"
+                    ) }}
+                </div>
+
+                <!-- Quick amount chips -->
+                <div style="display: flex; gap: var(--sp-2); margin-top: var(--sp-3); flex-wrap: wrap;"
+                     role="group" aria-label="Quick deposit amounts">
+                    <button type="button" class="quick-chip"
+                            onclick="setAmount('100.00')" aria-label="Set deposit amount to ₹100">
+                        + ₹100
+                    </button>
+                    <button type="button" class="quick-chip"
+                            onclick="setAmount('500.00')" aria-label="Set deposit amount to ₹500">
+                        + ₹500
+                    </button>
+                    <button type="button" class="quick-chip"
+                            onclick="setAmount('1000.00')" aria-label="Set deposit amount to ₹1,000">
+                        + ₹1,000
+                    </button>
+                    <button type="button" class="quick-chip"
+                            onclick="setAmount('5000.00')" aria-label="Set deposit amount to ₹5,000">
+                        + ₹5,000
+                    </button>
+                </div>
+
+                <span class="form-hint">Positive amount, up to 2 decimal places (e.g. 250 or 999.50)</span>
+                {% if form.amount.errors %}
+                    <span class="form-error" role="alert">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        {{ form.amount.errors[0] }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Description Field -->
+            <div class="form-group">
+                <label for="description" class="form-label">
+                    Note / Description
+                    <span style="color: var(--text-dim); font-weight: 400; margin-left: 0.3rem;">(Optional)</span>
+                </label>
+                {{ form.description(
+                    class="form-control",
+                    placeholder="e.g. Monthly stipend or freelance payment",
+                    id="description",
+                    autocomplete="off"
+                ) }}
+                {% if form.description.errors %}
+                    <span class="form-error" role="alert">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        {{ form.description.errors[0] }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div style="margin-top: var(--sp-6);">
+                <button type="submit" class="btn btn-full" style="padding: 0.8rem; font-size: 0.95rem;">
+                    <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Confirm &amp; Deposit Funds
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Note -->
+    <div class="auth-security-note" style="margin-top: var(--sp-4);" role="note">
+        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--info); flex-shrink:0;">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Deposits are recorded as atomic ledger entries and credited to your balance immediately upon confirmation.
+    </div>
+
+</div>
+
+<script>
+function setAmount(val) {
+    var input = document.getElementById('amount');
+    if (input) {
+        input.value = val;
+        input.focus();
+    }
+}
+</script>
+{% endblock %}

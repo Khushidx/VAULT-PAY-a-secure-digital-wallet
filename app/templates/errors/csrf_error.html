@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Security Verification Failed — VaultPay{% endblock %}
+{% block breadcrumb %}Security Check Failed{% endblock %}
+
+{% block content %}
+<div class="card card-danger-left" style="max-width: 520px; margin: 4rem auto; text-align: center; padding: var(--sp-8) var(--sp-6);" role="alert" aria-labelledby="csrf-error-heading">
+    <div style="width: 52px; height: 52px; border-radius: var(--radius-md); background: var(--danger-bg); border: 1px solid var(--danger-border); display: inline-flex; align-items: center; justify-content: center; margin-bottom: var(--sp-4); color: var(--danger);" aria-hidden="true">
+        <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+    </div>
+    <h1 id="csrf-error-heading" style="margin-bottom: var(--sp-3); font-size: 1.35rem; font-weight: 700; color: var(--text-primary);">
+        CSRF Verification Failed
+    </h1>
+    <p class="card-body" style="margin-bottom: var(--sp-6); color: var(--text-secondary); line-height: 1.6;">
+        {{ reason or "The request was blocked because a valid security token (CSRF) was missing or expired. This protects your account against Cross-Site Request Forgery attacks." }}
+    </p>
+    <a href="{{ url_for('main.index') }}" class="btn">
+        Return to Safety
+    </a>
+</div>
+{% endblock %}

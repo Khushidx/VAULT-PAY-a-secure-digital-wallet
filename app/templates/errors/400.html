@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Bad Request (400) — VaultPay{% endblock %}
+{% block breadcrumb %}400 Error{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 540px; margin: 4rem auto; text-align: center; padding: var(--sp-8) var(--sp-6);" role="alert" aria-labelledby="error-400-heading">
+    <div style="font-size: 3.5rem; font-family: var(--font-mono); color: var(--warning-text); font-weight: 800; line-height: 1; margin-bottom: var(--sp-3);" aria-hidden="true">
+        400
+    </div>
+    <h1 id="error-400-heading" style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin-bottom: var(--sp-3);">
+        Bad Request
+    </h1>
+    <p class="card-body" style="margin-bottom: var(--sp-6); color: var(--text-secondary); max-width: 440px; margin-left: auto; margin-right: auto;">
+        {{ error or "The server could not understand your request due to invalid syntax or malformed parameters." }}
+    </p>
+    <a href="{{ url_for('main.index') }}" class="btn">
+        Return to Home
+    </a>
+</div>
+{% endblock %}

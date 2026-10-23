@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History — VaultPay{% endblock %}
+{% block breadcrumb %}Transaction History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-title-group">
+        <h1 class="page-title">
+            Transaction History
+            <span class="status-pill status-pill-info" style="font-size: 0.7rem; font-family: var(--font-mono); margin-left: 0.5rem; vertical-align: middle;">
+                Account #{{ wallet.id }}
+            </span>
+        </h1>
+        <p class="page-subtitle">
+            Cryptographically audited double-entry ledger of all credits, debits, and peer transfers.
+        </p>
+    </div>
+    <div class="page-actions">
+        <a href="{{ url_for('wallet.deposit') }}" class="btn btn-secondary btn-sm">
+            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Deposit
+        </a>
+        <a href="{{ url_for('wallet.transfer') }}" class="btn btn-sm">
+            <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            Send Money
+        </a>
+    </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;" role="region" aria-label="Double-entry transaction audit ledger">
+    {% if transactions %}
+        <div class="tx-table-wrap" style="border: none; border-radius: 0;">
+            <table class="tx-table" aria-label="Transaction ledger records">
+                <thead>
+                    <tr>
+                        <th scope="col">Timestamp (UTC)</th>
+                        <th scope="col">Reference ID</th>
+                        <th scope="col">Operation</th>
+                        <th scope="col" style="text-align: right;">Amount</th>
+                        <th scope="col" style="text-align: center;">Status</th>
+                        <th scope="col">Memo / Description</th>
+                        <th scope="col" style="text-align: center; width: 60px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                        <tr>
+                            <td style="color: var(--text-muted); font-size: 0.8rem; white-space: nowrap; font-family: var(--font-mono);">
+                                <time datetime="{{ tx.created_at.isoformat() }}">
+                                    {{ tx.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                </time>
+                            </td>
+                            <td>
+                                <code style="font-size: 0.74rem; color: var(--info-text); background: var(--bg-surface-2); border-color: var(--border-subtle); word-break: break-all;">
+                                    {{ tx.reference_id }}
+                                </code>
+                            </td>
+                            <td>
+                                {% if tx.transaction_type == 'DEPOSIT' %}
+                                    <span class="tx-type-badge tx-deposit" aria-label="Deposit">
+                                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                        DEPOSIT
+                                    </span>
+                                {% elif tx.transaction_type == 'TRANSFER_OUT' %}
+                                    <span class="tx-type-badge tx-out" aria-label="Transfer out">
+                                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                        TRANSFER_OUT
+                                    </span>
+                                {% elif tx.transaction_type == 'TRANSFER_IN' %}
+                                    <span class="tx-type-badge tx-in" aria-label="Transfer in">
+                                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                                        TRANSFER_IN
+                                    </span>
+                                {% else %}
+                                    <span class="tx-type-badge" style="background: var(--bg-surface-3); border-color: var(--border-default); color: var(--text-secondary);">
+                                        {{ tx.transaction_type }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="{{ 'tx-amount-positive' if tx.amount_cents > 0 else 'tx-amount-negative' }}"
+                                style="font-size: 0.95rem; white-space: nowrap;">
+                                {{ '+' if tx.amount_cents > 0 else '' }}{{ tx.formatted_amount }}
+                            </td>
+                            <td style="text-align: center;">
+                                {% if tx.status == 'COMPLETED' %}
+                                    <span class="status-pill status-pill-success" aria-label="Completed">
+                                        <span class="status-dot" aria-hidden="true"></span>
+                                        {{ tx.status }}
+                                    </span>
+                                {% else %}
+                                    <span class="status-pill status-pill-danger" aria-label="{{ tx.status }}">
+                                        {{ tx.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="color: var(--text-secondary); font-size: 0.85rem; max-width: 260px;">
+                                {{ tx.description or "—" }}
+                            </td>
+                            <td style="text-align: center;">
+                                <form method="POST" action="{{ url_for('wallet.delete_transaction', transaction_id=tx.id) }}" style="display: inline;" onsubmit="return confirm('Delete this transaction from your history?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn-delete-tx" aria-label="Delete transaction {{ tx.reference_id }}" title="Delete transaction">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <polyline points="3 6 5 6 21 6"/>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                            <line x1="10" y1="11" x2="10" y2="17"/>
+                                            <line x1="14" y1="11" x2="14" y2="17"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state" role="status">
+            <svg class="empty-icon svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            <p class="empty-title">No Recorded Transactions</p>
+            <p class="empty-desc">No ledger audit records have been generated for this wallet account yet.</p>
+            <a href="{{ url_for('wallet.deposit') }}" class="btn">Make First Deposit</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

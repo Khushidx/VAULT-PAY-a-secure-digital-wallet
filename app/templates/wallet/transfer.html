@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Send Money — VaultPay{% endblock %}
+{% block breadcrumb %}Send Money{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 0 auto;">
+
+    <a href="{{ url_for('wallet.dashboard') }}" class="back-link" aria-label="Back to dashboard">
+        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to Dashboard
+    </a>
+
+    <div class="page-header" style="margin-top: 0;">
+        <div class="page-title-group">
+            <h1 class="page-title">Send Money</h1>
+            <p class="page-subtitle">
+                Peer-to-peer transfers execute with atomic database consistency. Review carefully before confirming.
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+
+        <!-- Available Balance Panel -->
+        <div style="background: var(--bg-surface-2); border: 1px solid var(--border-subtle); padding: var(--sp-4) var(--sp-5); border-radius: var(--radius-md); margin-bottom: var(--sp-6); display: flex; justify-content: space-between; align-items: center;"
+             role="status" aria-label="Available to send: {{ wallet.formatted_balance }}">
+            <div>
+                <span style="color: var(--text-dim); font-size: 0.68rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.08em; display: block; margin-bottom: 3px;">
+                    Available to Send
+                </span>
+                <span style="font-size: 1.45rem; font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); font-variant-numeric: tabular-nums;">
+                    {{ wallet.formatted_balance }}
+                </span>
+            </div>
+            <span class="status-pill status-pill-info" aria-label="P2P transfer ready">
+                <span class="status-dot" aria-hidden="true"></span>
+                P2P Ready
+            </span>
+        </div>
+
+        <!-- Transfer Form -->
+        <form method="POST"
+              action="{{ url_for('wallet.transfer') }}"
+              novalidate
+              aria-label="Send money transfer form">
+            {{ form.csrf_token }}
+
+            <!-- Recipient Field -->
+            <div class="form-group">
+                <label for="recipient" class="form-label">
+                    Recipient
+                </label>
+                {{ form.recipient(
+                    class="form-control",
+                    placeholder="Username or email (e.g. bob or bob@example.edu)",
+                    id="recipient",
+                    autocomplete="off",
+                    autocapitalize="off"
+                ) }}
+                <span class="form-hint">
+                    Must be an active registered user. Self-transfers are rejected by the server.
+                </span>
+                {% if form.recipient.errors %}
+                    <span class="form-error" role="alert">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        {{ form.recipient.errors[0] }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Amount Field -->
+            <div class="form-group">
+                <label for="amount" class="form-label">Transfer Amount (₹)</label>
+                <div class="amount-input-wrap">
+                    <span class="amount-prefix" aria-hidden="true">₹</span>
+                    {{ form.amount(
+                        class="form-control",
+                        placeholder="250.00",
+                        id="amount",
+                        inputmode="decimal",
+                        autocomplete="off"
+                    ) }}
+                </div>
+                <span class="form-hint">
+                    Positive amount, up to 2 decimal places. Must not exceed your available balance.
+                </span>
+                {% if form.amount.errors %}
+                    <span class="form-error" role="alert">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        {{ form.amount.errors[0] }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Note / Memo Field -->
+            <div class="form-group">
+                <label for="note" class="form-label">
+                    Note / Memo
+                    <span style="color: var(--text-dim); font-weight: 400; margin-left: 0.3rem;">(Optional)</span>
+                </label>
+                {{ form.note(
+                    class="form-control",
+                    placeholder="e.g. Lunch split or project reimbursement",
+                    id="note",
+                    autocomplete="off"
+                ) }}
+                {% if form.note.errors %}
+                    <span class="form-error" role="alert">
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        {{ form.note.errors[0] }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Confirmation reminder -->
+            <div style="background: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: var(--radius-sm); padding: var(--sp-3) var(--sp-4); margin-bottom: var(--sp-5); display: flex; align-items: flex-start; gap: var(--sp-3);" role="note">
+                <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--warning); flex-shrink:0; margin-top: 1px;">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span style="font-size: 0.8rem; color: var(--warning-text); line-height: 1.5;">
+                    <strong>Review carefully.</strong> Transfers cannot be reversed once confirmed. Verify the recipient and amount before proceeding.
+                </span>
+            </div>
+
+            <button type="submit" class="btn btn-full" style="padding: 0.8rem; font-size: 0.95rem;">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Confirm &amp; Send Transfer
+            </button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}VaultPay — Secure Cryptographic Digital Wallet{% endblock %}
+{% block breadcrumb %}Home{% endblock %}
+
+{% block content %}
+<!-- ===== HERO SECTION ===== -->
+<section class="hero">
+
+    <!-- ===== INTERACTIVE CURSOR-REACTIVE VAULTPAY BRAND DISPLAY ===== -->
+    <div class="hero-brand-stage" id="heroBrandStage" role="region" aria-label="Interactive VaultPay Cryptographic Emblem">
+        <canvas id="vaultpayCursorCanvas" class="hero-cursor-canvas" aria-hidden="true"></canvas>
+        <div class="hero-brand-emblem-wrap" id="heroBrandEmblemWrap">
+            <div class="hero-brand-emblem">
+                <div class="hero-brand-monogram" id="heroBrandMonogram" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="hero-shield-svg" aria-hidden="true">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 8v8M8 12h8" stroke-width="1.8"/>
+                    </svg>
+                </div>
+                <div class="hero-brand-title" aria-label="VaultPay">
+                    VAULT<span class="brand-accent">PAY</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hero-eyebrow" aria-label="Platform category">
+        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Defense-in-Depth Financial Platform
+    </div>
+    <h1>Cryptographic-grade<br>security for your wallet.</h1>
+    <p>
+        An enterprise financial ledger built with salted SHA-256 authentication,
+        AES-256-GCM data encryption at rest, and atomic double-entry transactions
+        in Indian Rupees (₹). Every paise, precisely tracked.
+    </p>
+    <div class="hero-actions">
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('wallet.dashboard') }}" class="btn btn-lg">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                Open Dashboard
+            </a>
+            <a href="{{ url_for('wallet.transfer') }}" class="btn btn-secondary btn-lg">
+                <svg class="svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Send Money
+            </a>
+        {% else %}
+            <a href="{{ url_for('auth.register') }}" class="btn btn-lg">
+                Create Account &rarr;
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-lg">
+                Sign In
+            </a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- ===== FEATURE CARDS ===== -->
+<div class="feature-grid" role="list">
+
+    <article class="card" role="listitem">
+        <div class="feature-icon-wrap" style="background: var(--success-bg); border: 1px solid var(--success-border);">
+            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--success);">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        </div>
+        <h2 class="card-title">Cryptographic Controls</h2>
+        <div class="card-body">
+            <p style="margin-bottom: 0.85rem;">Defense-in-depth security architecture protecting every layer:</p>
+            <ul style="margin-left: 1.15rem; line-height: 1.7; list-style: disc; color: var(--text-muted); font-size: 0.85rem;">
+                <li>Salted SHA-256 with unique 256-bit random salts per user</li>
+                <li>AES-256-GCM authenticated encryption at rest</li>
+                <li>CSRF protection &amp; Secure Session Cookies</li>
+                <li>Timing-safe constant-time verification</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="card" role="listitem">
+        <div class="feature-icon-wrap" style="background: var(--info-bg); border: 1px solid var(--info-border);">
+            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--info);">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        </div>
+        <h2 class="card-title">Precise Ledger Engine</h2>
+        <div class="card-body">
+            <p style="margin-bottom: 0.85rem;">Financial integrity at the database level:</p>
+            <ul style="margin-left: 1.15rem; line-height: 1.7; list-style: disc; color: var(--text-muted); font-size: 0.85rem;">
+                <li>Integer paise arithmetic — zero floating-point errors</li>
+                <li>SQLite CHECK constraint: balance_cents &ge; 0</li>
+                <li>ACID atomic transaction rollbacks</li>
+                <li>Complete double-entry audit event logging</li>
+            </ul>
+        </div>
+    </article>
+
+    <article class="card" role="listitem">
+        <div class="feature-icon-wrap" style="background: var(--pending-bg); border: 1px solid var(--pending-border);">
+            <svg class="svg-icon svg-icon-md" viewBox="0 0 24 24" aria-hidden="true" style="color: var(--pending);">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+        </div>
+        <h2 class="card-title">System Status</h2>
+        <div class="card-body">
+            <p style="margin-bottom: 1rem;">Flask application runtime and SQLite database layers are active.</p>
+            <div style="margin-bottom: 1rem;">
+                <span class="status-pill status-pill-success" aria-label="System operational">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    All Systems Operational
+                </span>
+            </div>
+            <a href="{{ url_for('main.health_check') }}" class="btn btn-secondary btn-sm">
+                Check /health Endpoint &rarr;
+            </a>
+        </div>
+    </article>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // ===== 1. INTERACTIVE CURSOR-BASED LATTICE ACROSS THE ENTIRE WHITE PLAIN =====
+    (function initVaultPayCursorGraphic() {
+        var stage = document.getElementById("heroBrandStage");
+        var canvas = document.getElementById("vaultpayCursorCanvas");
+        var emblemWrap = document.getElementById("heroBrandEmblemWrap");
+        if (!stage || !canvas) return;
+
+        var ctx = canvas.getContext("2d");
+        var dpr = window.devicePixelRatio || 1;
+        var width = 0;
+        var height = 0;
+        var mouse = { x: null, y: null, active: false };
+        var nodes = [];
+        var NODE_COUNT = 52;
+
+        function resize() {
+            var rect = stage.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.resetTransform && ctx.resetTransform();
+            ctx.scale(dpr, dpr);
+
+            if (nodes.length === 0) {
+                // Initialize nodes scattered uniformly all across the entire white plain
+                for (var i = 0; i < NODE_COUNT; i++) {
+                    nodes.push({
+                        x: Math.random() * width,
+                        y: Math.random() * height,
+                        vx: (Math.random() - 0.5) * 0.45,
+                        vy: (Math.random() - 0.5) * 0.45,
+                        radius: Math.random() * 2 + 1.2,
+                        baseAlpha: Math.random() * 0.35 + 0.2
+                    });
+                }
+            } else {
+                // Re-clamp existing nodes within new dimensions
+                for (var j = 0; j < nodes.length; j++) {
+                    nodes[j].x = Math.min(Math.max(nodes[j].x, 5), width - 5);
+                    nodes[j].y = Math.min(Math.max(nodes[j].y, 5), height - 5);
+                }
+            }
+        }
+        resize();
+        window.addEventListener("resize", resize);
+
+        function updateMouse(e) {
+            var stageRect = stage.getBoundingClientRect();
+            mouse.x = e.clientX - stageRect.left;
+            mouse.y = e.clientY - stageRect.top;
+            mouse.active = true;
+
+            // 3D Parallax Tilt on VAULTPAY emblem
+            if (emblemWrap) {
+                var normX = (mouse.x / width) - 0.5;
+                var normY = (mouse.y / height) - 0.5;
+                emblemWrap.style.transform = "perspective(800px) rotateX(" + (-normY * 5).toFixed(2) + "deg) rotateY(" + (normX * 5).toFixed(2) + "deg) translateZ(8px)";
+            }
+        }
+
+        stage.addEventListener("mousemove", updateMouse);
+        stage.addEventListener("mouseenter", updateMouse);
+        stage.addEventListener("mouseleave", function() {
+            mouse.active = false;
+            mouse.x = null;
+            mouse.y = null;
+            if (emblemWrap) {
+                emblemWrap.style.transform = "perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
+            }
+        });
+
+        function render() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Animate and draw nodes scattered all across the white plain
+            for (var i = 0; i < nodes.length; i++) {
+                var node = nodes[i];
+
+                // Natural gentle drift across the canvas
+                node.x += node.vx;
+                node.y += node.vy;
+
+                // Smooth boundary bounce
+                if (node.x <= 0) { node.x = 0; node.vx *= -1; }
+                if (node.x >= width) { node.x = width; node.vx *= -1; }
+                if (node.y <= 0) { node.y = 0; node.vy *= -1; }
+                if (node.y >= height) { node.y = height; node.vy *= -1; }
+
+                // Interactive cursor interaction anywhere across the white plain
+                if (mouse.active && mouse.x !== null) {
+                    var dx = mouse.x - node.x;
+                    var dy = mouse.y - node.y;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 130) {
+                        var force = (130 - dist) / 130;
+                        node.x += (dx / dist) * force * 0.85;
+                        node.y += (dy / dist) * force * 0.85;
+
+                        // Dynamic connecting line from cursor to nearby nodes
+                        ctx.beginPath();
+                        ctx.moveTo(node.x, node.y);
+                        ctx.lineTo(mouse.x, mouse.y);
+                        ctx.strokeStyle = "rgba(5, 150, 105, " + (force * 0.45).toFixed(2) + ")";
+                        ctx.lineWidth = 0.9;
+                        ctx.stroke();
+                    }
+                }
+
+                // Draw dot
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                ctx.fillStyle = mouse.active ? "rgba(5, 150, 105, 0.75)" : "rgba(71, 85, 105, " + node.baseAlpha + ")";
+                ctx.fill();
+
+                // Connect to adjacent nodes across the entire card
+                for (var j = i + 1; j < nodes.length; j++) {
+                    var other = nodes[j];
+                    var ndx = node.x - other.x;
+                    var ndy = node.y - other.y;
+                    var ndist = Math.sqrt(ndx * ndx + ndy * ndy);
+                    if (ndist < 95) {
+                        var alpha = (1 - ndist / 95) * (mouse.active ? 0.35 : 0.16);
+                        ctx.beginPath();
+                        ctx.moveTo(node.x, node.y);
+                        ctx.lineTo(other.x, other.y);
+                        ctx.strokeStyle = "rgba(5, 150, 105, " + alpha.toFixed(2) + ")";
+                        ctx.lineWidth = 0.75;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw subtle cursor focal reticle
+            if (mouse.active && mouse.x !== null) {
+                var mx = mouse.x;
+                var my = mouse.y;
+
+                ctx.beginPath();
+                ctx.arc(mx, my, 4, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(5, 150, 105, 0.9)";
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(mx, my, 20, 0, Math.PI * 2);
+                ctx.strokeStyle = "rgba(5, 150, 105, 0.35)";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    })();
+});
+</script>
+{% endblock %}

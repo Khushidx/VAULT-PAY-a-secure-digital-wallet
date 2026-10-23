@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VaultPay — Secure Digital Wallet{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+{% if session.get('user_id') %}
+<!-- ===== AUTHENTICATED APP SHELL ===== -->
+<div class="app-shell">
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-logo">
+            <a href="{{ url_for('main.index') }}" aria-label="VaultPay Home">
+                <span class="brand-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </span>
+                <span class="brand-text">Vault<span class="brand-accent">Pay</span></span>
+            </a>
+            <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" onclick="toggleSidebar()" aria-label="Collapse sidebar" title="Collapse sidebar">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="11 17 6 12 11 7"></polyline>
+                    <polyline points="18 17 13 12 18 7"></polyline>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main navigation">
+            <!-- WALLET SECTION -->
+            <div class="sidebar-section" id="sidebarSectionWallet">
+                <button type="button" class="sidebar-section-btn" onclick="toggleSidebarSection('sidebarSectionWallet')" aria-expanded="true" aria-controls="sidebarGroupWallet" title="Toggle Wallet section">
+                    <span class="sidebar-section-title">Wallet</span>
+                    <svg class="sidebar-section-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="sidebar-section-group" id="sidebarGroupWallet">
+                    <a href="{{ url_for('wallet.dashboard') }}"
+                       class="sidebar-link {% if request.endpoint == 'wallet.dashboard' %}active{% endif %}"
+                       aria-current="{% if request.endpoint == 'wallet.dashboard' %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                        Dashboard
+                    </a>
+
+                    <a href="{{ url_for('wallet.deposit') }}"
+                       class="sidebar-link {% if request.endpoint == 'wallet.deposit' %}active{% endif %}"
+                       aria-current="{% if request.endpoint == 'wallet.deposit' %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Deposit Funds
+                    </a>
+
+                    <a href="{{ url_for('wallet.transfer') }}"
+                       class="sidebar-link {% if request.endpoint == 'wallet.transfer' %}active{% endif %}"
+                       aria-current="{% if request.endpoint == 'wallet.transfer' %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                        Send Money
+                    </a>
+
+                    <a href="{{ url_for('wallet.history') }}"
+                       class="sidebar-link {% if request.endpoint == 'wallet.history' %}active{% endif %}"
+                       aria-current="{% if request.endpoint == 'wallet.history' %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 3h18v18H3z" fill="none"/>
+                            <path d="M9 3v18M3 9h18"/>
+                        </svg>
+                        Transaction History
+                    </a>
+                </div>
+            </div>
+
+            <!-- PAYMENT SECTION -->
+            <div class="sidebar-section" id="sidebarSectionPayment" style="margin-top: 0.35rem;">
+                <button type="button" class="sidebar-section-btn" onclick="toggleSidebarSection('sidebarSectionPayment')" aria-expanded="true" aria-controls="sidebarGroupPayment" title="Toggle Payment section">
+                    <span class="sidebar-section-title">Payment</span>
+                    <svg class="sidebar-section-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="sidebar-section-group" id="sidebarGroupPayment">
+                    <a href="{{ url_for('payment_methods.index') }}"
+                       class="sidebar-link {% if 'payment_methods' in request.endpoint or 'cards' in request.endpoint %}active{% endif %}"
+                       aria-current="{% if 'payment_methods' in request.endpoint or 'cards' in request.endpoint %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        Payment Methods
+                    </a>
+                </div>
+            </div>
+
+            <!-- SECURITY SECTION -->
+            <div class="sidebar-section" id="sidebarSectionSecurity" style="margin-top: 0.35rem;">
+                <button type="button" class="sidebar-section-btn" onclick="toggleSidebarSection('sidebarSectionSecurity')" aria-expanded="true" aria-controls="sidebarGroupSecurity" title="Toggle Security section">
+                    <span class="sidebar-section-title">Security</span>
+                    <svg class="sidebar-section-chevron" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </button>
+                <div class="sidebar-section-group" id="sidebarGroupSecurity">
+                    <a href="{{ url_for('security_lab.index') }}"
+                       class="sidebar-link {% if request.endpoint == 'security_lab.index' %}active{% endif %}"
+                       aria-current="{% if request.endpoint == 'security_lab.index' %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        Security Lab
+                    </a>
+
+                    <a href="{{ url_for('chameleon_lab.index') }}"
+                       class="sidebar-link {% if 'chameleon' in request.endpoint %}active{% endif %}"
+                       aria-current="{% if 'chameleon' in request.endpoint %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="M12 3a9 9 0 0 1 9 9h-9V3z"/>
+                            <circle cx="12" cy="3" r="3"/>
+                        </svg>
+                        Chameleon Lab
+                    </a>
+
+                    <a href="{{ url_for('main.crypto_architecture') }}"
+                       class="sidebar-link {% if request.endpoint == 'main.crypto_architecture' %}active{% endif %}"
+                       aria-current="{% if request.endpoint == 'main.crypto_architecture' %}page{% endif %}">
+                        <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <polyline points="16 18 22 12 16 6"/>
+                            <polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                        Architecture
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="sidebar-user-info" aria-label="Signed in as {{ session.get('username') }}">
+                <span class="sidebar-user-name">{{ session.get('username') }}</span>
+                <span class="sidebar-user-role">Active Account</span>
+            </div>
+            <a href="{{ url_for('auth.profile') }}"
+               class="sidebar-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                Account Profile
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="sidebar-link" style="color: var(--danger-text);">
+                <svg class="sidebar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Log Out
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="app-content">
+        <!-- Top Bar -->
+        <header class="app-topbar">
+            <div class="flex items-center gap-3">
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn"
+                        onclick="toggleSidebar()"
+                        aria-label="Toggle navigation sidebar"
+                        aria-expanded="true"
+                        aria-controls="sidebar"
+                        title="Toggle navigation sidebar">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                    </svg>
+                </button>
+                <nav class="page-breadcrumb" aria-label="Breadcrumb">
+                    <a href="{{ url_for('main.index') }}" style="color: var(--text-dim); text-decoration: none; font-size: 0.78rem;">VaultPay</a>
+                    <span class="page-breadcrumb-sep" aria-hidden="true">/</span>
+                    <span class="page-breadcrumb-current">{% block breadcrumb %}{% endblock %}</span>
+                </nav>
+            </div>
+            <div class="topbar-actions">
+                {% if g.current_user and g.current_user.security_status == 'QUARANTINED' %}
+                <span class="status-pill status-pill-danger" style="background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border);" aria-label="Account in protective quarantine">
+                    <span class="status-dot" style="background: var(--danger);" aria-hidden="true"></span>
+                    Quarantined
+                </span>
+                {% else %}
+                <span class="status-pill status-pill-success" aria-label="Account active">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    Active
+                </span>
+                {% endif %}
+                <a href="{{ url_for('auth.profile') }}"
+                   class="btn btn-secondary btn-sm"
+                   aria-label="View profile for {{ session.get('username') }}">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    {{ session.get('username') }}
+                </a>
+            </div>
+        </header>
+
+        <!-- Protective Quarantine Alert Banner -->
+        {% if g.current_user and g.current_user.security_status == 'QUARANTINED' %}
+        <div style="background: #FEF2F2; border-bottom: 2px solid #DC2626; padding: 0.75rem var(--sp-8); color: #991B1B; font-size: 0.82rem; font-weight: 500; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;" role="alert">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#DC2626" stroke-width="2.5" aria-hidden="true">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span><strong>VAULT IN PROTECTIVE QUARANTINE:</strong> A Canary Tripwire was triggered by an unauthorized probe. Outgoing funds are safeguarded.</span>
+            </div>
+            <a href="{{ url_for('chameleon_lab.index') }}" class="btn btn-sm" style="background: #DC2626; color: #FFFFFF; font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.75rem; text-decoration: none; border-radius: var(--radius-sm); border: none;">
+                Inspect & Resolve in Lab &rarr;
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="padding: 0 var(--sp-8); padding-top: var(--sp-4);" role="alert" aria-live="polite">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}" role="alert">
+                            <svg class="alert-icon svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="12" y1="8" x2="12" y2="12"/>
+                                <line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        <main class="page-content" id="main-content" tabindex="-1">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+{% else %}
+<!-- ===== PUBLIC SHELL (no sidebar) ===== -->
+<header>
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <a href="{{ url_for('main.index') }}" class="navbar-brand" aria-label="VaultPay Home">
+            <span class="brand-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+            </span>
+            <span class="brand-text">Vault<span class="brand-accent">Pay</span></span>
+        </a>
+
+        <ul class="navbar-nav" role="list">
+            <li><a href="{{ url_for('main.index') }}" class="nav-link">Home</a></li>
+            <li>
+                <a href="{{ url_for('security_lab.index') }}" class="nav-link"
+                   style="color: var(--accent); font-weight: 600;">
+                    Security Lab
+                </a>
+            </li>
+            <li><a href="{{ url_for('main.health_check') }}" class="nav-link">System Health</a></li>
+            <li>
+                <a href="{{ url_for('auth.login') }}" class="nav-link">Log In</a>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-sm"
+                   style="padding: 0.35rem 0.9rem;">
+                    Create Account
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<div class="container" role="main">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div role="alert" aria-live="polite">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <svg class="alert-icon svg-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main id="main-content" tabindex="-1">
+        {{ self.content() }}
+    </main>
+</div>
+
+<footer role="contentinfo">
+    <p>&copy; 2026 VaultPay &mdash; Secure Digital Wallet. Built with Python, Flask &amp; SQLite.</p>
+</footer>
+
+{% endif %}
+
+<!-- Skip to main content link (accessibility) -->
+<a href="#main-content" class="sr-only" style="position: fixed; top: var(--sp-2); left: var(--sp-2); z-index: 9999; background: var(--accent); color: var(--text-on-accent); padding: var(--sp-2) var(--sp-4); border-radius: var(--radius-sm); font-weight: 600; font-size: 0.875rem; text-decoration: none;" onfocus="this.style.position='static';" onblur="this.style.position='fixed';">
+    Skip to main content
+</a>
+
+<script>
+/* ===== SIDEBAR TOGGLE & SECTION COLLAPSE ===== */
+function isMobileView() {
+    return window.innerWidth <= 768;
+}
+
+function openSidebarMobile() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const btn = document.getElementById('sidebarToggleBtn');
+    if (!sidebar) return;
+    sidebar.classList.add('open');
+    overlay && overlay.classList.add('visible');
+    btn && btn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeSidebarMobile() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const btn = document.getElementById('sidebarToggleBtn');
+    if (!sidebar) return;
+    sidebar.classList.remove('open');
+    overlay && overlay.classList.remove('visible');
+    btn && btn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+}
+
+// Backward-compatible aliases
+var openSidebar = openSidebarMobile;
+var closeSidebar = closeSidebarMobile;
+
+function toggleSidebar() {
+    if (isMobileView()) {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('open')) {
+            closeSidebarMobile();
+        } else {
+            openSidebarMobile();
+        }
+    } else {
+        toggleSidebarCollapse();
+    }
+}
+
+function toggleSidebarCollapse() {
+    const shell = document.querySelector('.app-shell');
+    const btn = document.getElementById('sidebarToggleBtn');
+    if (!shell) return;
+    const isCollapsed = shell.classList.toggle('sidebar-collapsed');
+    btn && btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    try {
+        localStorage.setItem('vaultpay_sidebar_collapsed', isCollapsed ? '1' : '0');
+    } catch (e) {}
+}
+
+function toggleSidebarSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const btn = section.querySelector('.sidebar-section-btn');
+    const isCollapsed = section.classList.toggle('collapsed');
+    if (btn) {
+        btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    }
+    try {
+        localStorage.setItem('vp_sec_' + sectionId, isCollapsed ? '1' : '0');
+    } catch (e) {}
+}
+
+/* Close sidebar on Escape */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSidebarMobile();
+});
+
+/* Restore sidebar and sections collapsed state on load */
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore desktop sidebar collapse state
+    try {
+        if (!isMobileView()) {
+            const savedSidebar = localStorage.getItem('vaultpay_sidebar_collapsed');
+            if (savedSidebar === '1') {
+                const shell = document.querySelector('.app-shell');
+                const btn = document.getElementById('sidebarToggleBtn');
+                shell && shell.classList.add('sidebar-collapsed');
+                btn && btn.setAttribute('aria-expanded', 'false');
+            }
+        }
+    } catch (e) {}
+
+    // Restore section collapse states (keeping section with active link open)
+    ['sidebarSectionWallet', 'sidebarSectionPayment', 'sidebarSectionSecurity'].forEach(function(secId) {
+        const sec = document.getElementById(secId);
+        if (!sec) return;
+        if (sec.querySelector('.sidebar-link.active')) {
+            sec.classList.remove('collapsed');
+            const btn = sec.querySelector('.sidebar-section-btn');
+            btn && btn.setAttribute('aria-expanded', 'true');
+            return;
+        }
+        try {
+            const savedState = localStorage.getItem('vp_sec_' + secId);
+            if (savedState === '1') {
+                sec.classList.add('collapsed');
+                const btn = sec.querySelector('.sidebar-section-btn');
+                btn && btn.setAttribute('aria-expanded', 'false');
+            }
+        } catch (e) {}
+    });
+});
+
+/* ===== PASSWORD VISIBILITY TOGGLE ===== */
+function initPwToggle(inputId, btnId) {
+    const input = document.getElementById(inputId);
+    const btn   = document.getElementById(btnId);
+    if (!input || !btn) return;
+    btn.addEventListener('click', function() {
+        const isText = input.type === 'text';
+        input.type = isText ? 'password' : 'text';
+        btn.setAttribute('aria-label', isText ? 'Show password' : 'Hide password');
+        btn.querySelector('.pw-eye-open') && (btn.querySelector('.pw-eye-open').style.display = isText ? 'block' : 'none');
+        btn.querySelector('.pw-eye-closed') && (btn.querySelector('.pw-eye-closed').style.display = isText ? 'none' : 'block');
+    });
+}
+
+/* ===== FORM LOADING STATE ===== */
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function() {
+            var btn = form.querySelector('button[type="submit"]');
+            if (!btn) return;
+            if (form.getAttribute('onsubmit')) return;
+            btn.setAttribute('data-loading', '');
+            btn.disabled = true;
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Processing…';
+            setTimeout(function() {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.removeAttribute('data-loading');
+            }, 10000);
+        });
+    });
+});
+</script>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

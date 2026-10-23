@@ -1,0 +1,867 @@
+{% extends "base.html" %}
+
+{% block title %}Chameleon Simulator — VaultPay Counter-Surveillance Lab{% endblock %}
+
+{% block breadcrumb %}Chameleon Simulator{% endblock %}
+
+{% block content %}
+<div class="chameleon-lab-container" style="max-width: 1180px; margin: 0 auto; padding-bottom: 3.5rem;">
+
+    <!-- CSRF Token Meta for Fetch API Calls -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Header & Live System Status -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);">
+        <div>
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+                <h1 style="font-size: 1.65rem; font-weight: 700; color: var(--text-primary); margin: 0; letter-spacing: -0.02em;">
+                    CHAMELEON CARD & CANARY TRIPWIRE LAB
+                </h1>
+                <span class="badge" style="background: #17202A; color: #FFFFFF; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: var(--radius-sm); letter-spacing: 0.05em;">
+                    ACTIVE DEFENSE
+                </span>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0; max-width: 820px; line-height: 1.5;">
+                Demonstrating proactive breach detection: a single-use virtual card that morphs into a dormant honeypot tripwire after its initial purchase. If a compromised merchant database ever leaks, any attacker probe triggers instant quarantine with zero financial loss.
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            {% if cards and cards|length > 1 %}
+            <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <label for="cardSelector" style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Active Card:</label>
+                <select id="cardSelector" onchange="switchCard(this.value)" class="form-input" style="font-size: 0.78rem; padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); max-width: 260px;">
+                    {% for c in cards %}
+                    <option value="{{ c.id }}" {% if c.id == card.id %}selected{% endif %}>
+                        {{ c.card_name }} ({{ c.merchant_tag }}) — {{ c.state }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <button onclick="openCreateModal()" class="btn btn-primary btn-sm" id="btnOpenCreateCardModal" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+                + Issue Chameleon Card
+            </button>
+
+            <button onclick="resetSimulation()" class="btn btn-secondary btn-sm" id="btnResetSimulation" title="Restart simulation with fresh demo card">
+                <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10"/>
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                Reset Demo
+            </button>
+        </div>
+    </div>
+
+    <!-- Issue Chameleon Card Modal -->
+    <div id="createCardModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; align-items: center; justify-content: center; padding: 1.25rem; backdrop-filter: blur(2px);">
+        <div class="card" style="max-width: 520px; width: 100%; background: var(--bg-surface); padding: 1.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-xl); border: 1px solid var(--border-default);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                        <span class="badge" style="background: var(--accent); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 3px;">
+                            ACTIVE DEFENSE
+                        </span>
+                        <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">
+                            Issue New Chameleon Card
+                        </h3>
+                    </div>
+                    <span style="font-size: 0.78rem; color: var(--text-muted);">
+                        Single-use virtual card that morphs into a canary honeypot after checkout.
+                    </span>
+                </div>
+                <button type="button" onclick="closeCreateModal()" style="background: none; border: none; font-size: 1.35rem; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 0 0.25rem;" aria-label="Close modal">&times;</button>
+            </div>
+
+            <form id="createCardForm" onsubmit="submitCreateCard(event)">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.35rem;">
+                        Card Nickname / Purchase Purpose
+                    </label>
+                    <input type="text" id="inputCardName" class="form-input" placeholder="e.g. ShadyElectronics Flash Deal, Streaming Promo" required style="width: 100%; font-size: 0.85rem;" />
+                    <span style="font-size: 0.7rem; color: var(--text-dim); display: block; margin-top: 0.2rem;">
+                        Reference name for your transaction in the ledger.
+                    </span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.35rem;">
+                        Target Merchant Domain / Website
+                    </label>
+                    <input type="text" id="inputMerchantTag" class="form-input" placeholder="e.g. ShadyDeals.in, AudioGearShop.in" required style="width: 100%; font-size: 0.85rem;" />
+                    <span style="font-size: 0.7rem; color: var(--text-dim); display: block; margin-top: 0.2rem;">
+                        The only merchant authorized to charge this card before it morphs.
+                    </span>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label style="display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.35rem;">
+                        Maximum Spend Limit (₹)
+                    </label>
+                    <input type="number" step="0.01" min="1" max="50000" id="inputSpendLimit" class="form-input" value="1499.00" required style="width: 100%; font-size: 0.9rem; font-family: var(--font-mono);" />
+                    <span style="font-size: 0.7rem; color: var(--text-dim); display: block; margin-top: 0.2rem;">
+                        The exact amount authorized. Funds are debited from your wallet only on purchase.
+                    </span>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                    <button type="button" onclick="closeCreateModal()" class="btn btn-secondary btn-sm">Cancel</button>
+                    <button type="submit" id="btnSubmitCreateCard" class="btn btn-primary btn-sm">
+                        Issue Card &amp; Load into Lab
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4-Stage Interactive Lifecycle Bar -->
+    <div class="card" style="margin-bottom: 1.75rem; background: var(--bg-surface); padding: 1rem 1.25rem;">
+        <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.75rem;">
+            Chameleon Lifecycle Stage
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+            <div id="stepPill1" class="step-card active" style="padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--accent); background: var(--success-bg); transition: all var(--dur-base) var(--ease-out);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 700; font-size: 0.78rem; color: var(--success-text);">STAGE 1</span>
+                    <span id="badgeStep1" class="status-pill status-pill-success" style="font-size: 0.65rem; padding: 0.1rem 0.4rem;">ACTIVE</span>
+                </div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">Single-Use Burner</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">Spend limit funded; ready for initial purchase.</div>
+            </div>
+
+            <div id="stepPill2" class="step-card" style="padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-default); background: var(--bg-surface-2); transition: all var(--dur-base) var(--ease-out);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 700; font-size: 0.78rem; color: var(--text-muted);">STAGE 2</span>
+                    <span id="badgeStep2" class="status-pill" style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: var(--bg-surface-3); color: var(--text-muted);">DORMANT</span>
+                </div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">Morphed Canary Tripwire</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">Balance ₹0; armed as honeypot in merchant DB.</div>
+            </div>
+
+            <div id="stepPill3" class="step-card" style="padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-default); background: var(--bg-surface-2); transition: all var(--dur-base) var(--ease-out);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 700; font-size: 0.78rem; color: var(--text-muted);">STAGE 3</span>
+                    <span id="badgeStep3" class="status-pill" style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: var(--bg-surface-3); color: var(--text-muted);">MONITORING</span>
+                </div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">Adversary Probe Intercepted</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">Breached card tested; tarpit active & quarantined.</div>
+            </div>
+
+            <div id="stepPill4" class="step-card" style="padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-default); background: var(--bg-surface-2); transition: all var(--dur-base) var(--ease-out);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                    <span style="font-weight: 700; font-size: 0.78rem; color: var(--text-muted);">STAGE 4</span>
+                    <span id="badgeStep4" class="status-pill" style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: var(--bg-surface-3); color: var(--text-muted);">STANDBY</span>
+                </div>
+                <div style="font-weight: 600; font-size: 0.85rem; color: var(--text-primary);">Threat Resolution</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;">Forensic docket verified; vault restored.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN LAB WORKBENCH -->
+    <div style="display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.5rem; margin-bottom: 2rem;">
+
+        <!-- LEFT COLUMN: THE CHAMELEON CARD ARTIFACT -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            <!-- Card Visual Artifact -->
+            <div class="card" style="padding: 1.5rem; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #FFFFFF; border: 1px solid #334155; box-shadow: var(--shadow-lg); position: relative; overflow: hidden;">
+                <!-- Security Microchip graphic -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                        <span style="width: 32px; height: 24px; background: #D97706; border-radius: 4px; display: inline-block; border: 1px solid #B45309; box-shadow: inset 0 0 4px rgba(0,0,0,0.4);"></span>
+                        <span style="font-size: 0.75rem; letter-spacing: 0.08em; color: #94A3B8; font-weight: 600;">CONTACTLESS CHIP</span>
+                    </div>
+                    <span id="cardStateBadge" style="font-family: var(--font-mono); font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 3px; font-weight: 700; background: rgba(5, 150, 105, 0.2); color: #34D399; border: 1px solid #059669;">
+                        ACTIVE_BURNER
+                    </span>
+                </div>
+
+                <!-- 16-Digit PAN -->
+                <div style="font-family: var(--font-mono); font-size: 1.35rem; letter-spacing: 0.12em; color: #F8FAFC; margin-bottom: 1.25rem; word-break: break-all;" id="cardPan">
+                    {{ card.masked_pan }}
+                </div>
+
+                <!-- Details Row -->
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 0.75rem; font-family: var(--font-mono); font-size: 0.75rem;">
+                    <div>
+                        <div style="color: #64748B; font-size: 0.65rem; text-transform: uppercase;">Cardholder / Merchant</div>
+                        <div style="color: #E2E8F0; font-weight: 600;" id="cardMerchant">{{ card.merchant_tag }}</div>
+                    </div>
+                    <div>
+                        <div style="color: #64748B; font-size: 0.65rem; text-transform: uppercase;">Expires</div>
+                        <div style="color: #E2E8F0;" id="cardExpiry">{{ card.expiry }}</div>
+                    </div>
+                    <div>
+                        <div style="color: #64748B; font-size: 0.65rem; text-transform: uppercase;">CVV</div>
+                        <div style="color: #E2E8F0;">•••</div>
+                    </div>
+                </div>
+
+                <!-- Financial Balance Strip inside Card -->
+                <div style="margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem;">
+                    <span style="color: #94A3B8;">Spend Limit:</span>
+                    <span id="cardSpendLimit" style="font-family: var(--font-mono); font-weight: 700; color: #38BDF8;">
+                        ₹{{ "%.2f"|format(card.remaining_balance_cents / 100.0) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Card Controls & Metadata -->
+            <div class="card" style="padding: 1.25rem;">
+                <h3 style="font-size: 0.95rem; font-weight: 700; margin: 0 0 0.75rem 0; color: var(--text-primary);">
+                    Card Configuration & Ledger Bounds
+                </h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.8rem; margin-bottom: 1rem;">
+                    <div style="background: var(--bg-surface-3); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                        <span style="color: var(--text-muted); font-size: 0.72rem; display: block;">WALLET BALANCE</span>
+                        <strong style="font-family: var(--font-mono); color: var(--accent); font-size: 0.95rem;" id="walletBalanceDisplay">
+                            {{ wallet_balance }}
+                        </strong>
+                    </div>
+                    <div style="background: var(--bg-surface-3); padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                        <span style="color: var(--text-muted); font-size: 0.72rem; display: block;">TOKEN IDENTIFIER</span>
+                        <code style="font-size: 0.7rem; color: var(--text-secondary); word-break: break-all;" id="cardToken">
+                            {{ card.card_token }}
+                        </code>
+                    </div>
+                </div>
+
+                <!-- Morph Notice Callout -->
+                <div id="morphCallout" style="background: var(--info-bg); border-left: 3px solid var(--info); padding: 0.75rem; border-radius: 4px; font-size: 0.78rem; color: var(--info-text); line-height: 1.45;">
+                    <strong>Chameleon Contract:</strong> Authorized for a single transaction up to <span id="morphCalloutLimit">₹{{ "%.2f"|format(card.initial_spend_limit_cents / 100.0) }}</span> at <em id="morphCalloutMerchant">{{ card.merchant_tag }}</em>. Upon completion, spend limit drops to ₹0 and the card morphs into an active Canary Tripwire.
+                </div>
+            </div>
+
+            <!-- Stage 1 Action Box -->
+            <div class="card" id="stage1ActionCard" style="padding: 1.25rem; border-top: 3px solid var(--accent);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <span style="font-size: 0.72rem; font-weight: 700; color: var(--accent); text-transform: uppercase;">Stage 1 Action</span>
+                    <span style="font-size: 0.72rem; color: var(--text-muted);">Legitimate E-Commerce Flow</span>
+                </div>
+                <h4 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.5rem 0;">
+                    Execute Legitimate Purchase
+                </h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Simulate buying from <strong id="stage1Merchant">{{ card.merchant_tag }}</strong> for <span id="stage1Limit">₹{{ "%.2f"|format(card.initial_spend_limit_cents / 100.0) }}</span>. Funds will be deducted from your wallet, and the card will morph into a honeypot.
+                </p>
+                <button onclick="executePurchase()" id="btnExecutePurchase" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                    <span id="btnExecutePurchaseText">Simulate Legitimate Purchase (₹{{ "%.2f"|format(card.initial_spend_limit_cents / 100.0) }})</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: INTERACTIVE SIMULATION & ATTACK CONSOLE -->
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+
+            <!-- Adversary Terminal / Attack Simulation Box -->
+            <div class="card" style="padding: 1.25rem; background: #090D16; color: #E2E8F0; border: 1px solid #1E293B; box-shadow: var(--shadow-md);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; border-bottom: 1px solid #1E293B; padding-bottom: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #F59E0B; display: inline-block;"></span>
+                        <span style="width: 10px; height: 10px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+                        <span style="font-family: var(--font-mono); font-size: 0.75rem; color: #94A3B8; margin-left: 0.5rem;">
+                            adversary-shell ~ card-check-botnet
+                        </span>
+                    </div>
+                    <span style="font-size: 0.7rem; background: #1E293B; color: #F87171; padding: 0.15rem 0.5rem; border-radius: 3px; font-weight: 600;">
+                        DARK WEB SIMULATOR
+                    </span>
+                </div>
+
+                <div style="font-family: var(--font-mono); font-size: 0.78rem; line-height: 1.5; color: #94A3B8; margin-bottom: 1rem;">
+                    <div style="color: #38BDF8;"># Scenario: 6 Months After Purchase</div>
+                    <div>&gt; Target: <span style="color: #F8FAFC;" id="scenTargetMerchant">{{ card.merchant_tag }} (SQL database dump leaked)</span></div>
+                    <div>&gt; Leaked Token: <span style="color: #F8FAFC;" id="scenLeakedToken">{{ card.card_token }}</span></div>
+                    <div>&gt; Botnet Origin: <span style="color: #FBBF24;">185.220.101.5 (Tor Exit Relay, Frankfurt)</span></div>
+                    <div>&gt; Attack Tool: <span style="color: #F8FAFC;">python-requests/2.31.0 - Automated Card-Cracker</span></div>
+                </div>
+
+                <!-- Stage 3 Attack Trigger -->
+                <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 0.75rem;">
+                    <div style="font-size: 0.75rem; color: #FCA5A5; font-weight: 600; margin-bottom: 0.35rem;">
+                        STAGE 3: ADVERSARY PROBE TRIGGER
+                    </div>
+                    <p style="font-size: 0.75rem; color: #94A3B8; margin: 0 0 0.75rem 0;">
+                        The card-testing botnet runs a ₹1.00 automated authorization test against VaultPay's gateway to verify if the leaked card is active.
+                    </p>
+                    <button onclick="executeAdversaryProbe()" id="btnAdversaryProbe" class="btn btn-sm" style="background: #DC2626; color: #FFFFFF; font-weight: 700; width: 100%; justify-content: center; border: none; cursor: pointer; padding: 0.5rem;" disabled>
+                        <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        Simulate Adversary Probing Leaked Card (₹1.00)
+                    </button>
+                    <div id="probeDisabledNotice" style="font-size: 0.7rem; color: #64748B; margin-top: 0.4rem; text-align: center;">
+                        (Disabled until Stage 1 legitimate purchase is executed)
+                    </div>
+                </div>
+
+                <!-- Real-Time Tarpit & Wire Log Terminal Output -->
+                <div id="terminalLog" style="background: #030712; padding: 0.75rem; border-radius: 4px; border: 1px solid #1E293B; font-family: var(--font-mono); font-size: 0.72rem; max-height: 170px; overflow-y: auto; color: #64748B;">
+                    <div>[SYSTEM READY] Chameleon Card Provisioned. Awaiting Stage 1 legitimate transaction...</div>
+                </div>
+            </div>
+
+            <!-- DEFENSE & FORENSIC DOCKET (STAGE 4) -->
+            <div class="card" id="forensicDocketCard" style="padding: 1.25rem; display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                    <div>
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #DC2626; text-transform: uppercase;">
+                            Forensic Evidence Docket
+                        </span>
+                        <h4 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0.2rem 0 0 0;">
+                            Intrusion Telemetry & Autonomous Lockdown
+                        </h4>
+                    </div>
+                    <span class="status-pill status-pill-danger" style="background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5;">
+                        TRIPWIRE FIRED
+                    </span>
+                </div>
+
+                <!-- Defense Summary Metrics -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1rem; font-size: 0.78rem;">
+                    <div style="background: var(--bg-surface-3); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                        <span style="color: var(--text-muted); font-size: 0.68rem; display: block;">FINANCIAL LOSS</span>
+                        <strong style="color: var(--success); font-family: var(--font-mono); font-size: 0.95rem;">₹0.00</strong>
+                    </div>
+                    <div style="background: var(--bg-surface-3); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                        <span style="color: var(--text-muted); font-size: 0.68rem; display: block;">TARPIT DELAY</span>
+                        <strong style="color: var(--warning); font-family: var(--font-mono); font-size: 0.95rem;">1,200ms</strong>
+                    </div>
+                    <div style="background: var(--bg-surface-3); padding: 0.5rem; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                        <span style="color: var(--text-muted); font-size: 0.68rem; display: block;">VAULT STATUS</span>
+                        <strong style="color: #DC2626; font-family: var(--font-mono); font-size: 0.95rem;">QUARANTINED</strong>
+                    </div>
+                </div>
+
+                <!-- Adversary Details Grid -->
+                <div style="background: var(--bg-surface-2); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.75rem; font-size: 0.78rem; font-family: var(--font-mono); margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                        <span style="color: var(--text-muted);">Attacker IP:</span>
+                        <span id="docketIp" style="color: #DC2626; font-weight: 700;">185.220.101.5</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                        <span style="color: var(--text-muted);">Attacker Geo:</span>
+                        <span id="docketGeo" style="color: var(--text-primary);">Frankfurt, Germany (Tor Exit Relay)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                        <span style="color: var(--text-muted);">Deceptive HTTP Reply:</span>
+                        <span style="color: var(--warning);">200 OK (Insufficient Funds)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-muted);">Compromised Origin:</span>
+                        <span id="docketMerchant" style="color: var(--accent); font-weight: 700;">AudioGearShop.in (Breached)</span>
+                    </div>
+                </div>
+
+                <!-- Stage 4 Remediation Button -->
+                <button onclick="resolveIncident()" id="btnResolveIncident" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                    <svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    Neutralize Breached Token & Restore Vault
+                </button>
+            </div>
+
+            <!-- Resolution Success Panel -->
+            <div class="card" id="resolutionSuccessCard" style="padding: 1.25rem; display: none; background: var(--success-bg); border: 1px solid var(--success-border);">
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; color: #fff;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 1rem; color: var(--success-text); font-weight: 700;">
+                            Incident Successfully Remediated
+                        </h4>
+                        <span style="font-size: 0.75rem; color: var(--success-text);">
+                            The breached token has been permanently purged and account quarantine lifted.
+                        </span>
+                    </div>
+                </div>
+                <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0.5rem 0 0.75rem 0; line-height: 1.45;">
+                    <strong>Security Takeaway:</strong> You identified that <em>AudioGearShop.in</em> was breached months before any official public announcement, lost ₹0, trapped the attacker's IP, and protected your primary funds.
+                </p>
+                <button onclick="resetSimulation()" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center;">
+                    Run Simulation Again with New Card &rarr;
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- COMPARISON REFERENCE TABLE -->
+    <div class="card" style="margin-top: 1.5rem; background: var(--bg-surface);">
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0 0 1rem 0;">
+            Architectural Comparison: Why Mainstream Wallets Cannot Do This
+        </h3>
+
+        <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%; font-size: 0.8rem;">
+                <thead>
+                    <tr>
+                        <th style="padding: 0.65rem 0.85rem; text-align: left;">Threat Vector / Feature</th>
+                        <th style="padding: 0.65rem 0.85rem; text-align: left;">Apple Pay / Google Wallet</th>
+                        <th style="padding: 0.65rem 0.85rem; text-align: left;">PayPal</th>
+                        <th style="padding: 0.65rem 0.85rem; text-align: left;">VaultPay Chameleon Card</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 0.65rem 0.85rem; font-weight: 600;">Merchant DB Breach (6 mo. later)</td>
+                        <td style="padding: 0.65rem 0.85rem; color: #DC2626;">Silent compromise; wait for unauthorized bank charges</td>
+                        <td style="padding: 0.65rem 0.85rem; color: #DC2626;">Card charged; 14-30 day dispute process</td>
+                        <td style="padding: 0.65rem 0.85rem; color: var(--success); font-weight: 700;">Instant Honeypot tripwire triggered (₹0 loss)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.65rem 0.85rem; font-weight: 600;">Breach Detection False Positives</td>
+                        <td style="padding: 0.65rem 0.85rem;">Probabilistic ML scoring (false blocks common)</td>
+                        <td style="padding: 0.65rem 0.85rem;">Probabilistic risk engine (random account freezes)</td>
+                        <td style="padding: 0.65rem 0.85rem; color: var(--success); font-weight: 700;">0% False Positives (Canary touches are 100% malicious)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.65rem 0.85rem; font-weight: 600;">Adversary Deception (Tarpitting)</td>
+                        <td style="padding: 0.65rem 0.85rem;">None (Standard card decline codes)</td>
+                        <td style="padding: 0.65rem 0.85rem;">None (Generic gateway errors)</td>
+                        <td style="padding: 0.65rem 0.85rem; color: var(--success); font-weight: 700;">1,200ms delay + Deceptive fake balance response</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.65rem 0.85rem; font-weight: 600;">Forensic Telemetry to User</td>
+                        <td style="padding: 0.65rem 0.85rem;">Zero visibility (black box)</td>
+                        <td style="padding: 0.65rem 0.85rem;">Zero visibility ("Unknown fraud")</td>
+                        <td style="padding: 0.65rem 0.85rem; color: var(--success); font-weight: 700;">Full forensic docket (Attacker IP, Geo, Headers, TLS)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<style>
+@keyframes chameleon-spin {
+    to { transform: rotate(360deg); }
+}
+.chameleon-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ffffff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: chameleon-spin 0.75s linear infinite;
+    margin-right: 7px;
+    vertical-align: middle;
+}
+</style>
+
+<!-- JAVASCRIPT: INTERACTIVE 4-STAGE SIMULATION ENGINE -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+    let currentCardId = {{ card.id }};
+    let currentCardState = "{{ card.state }}";
+    let currentSpendLimitCents = {{ card.remaining_balance_cents }};
+    let currentMerchantTag = "{{ card.merchant_tag }}";
+
+    function logToTerminal(message, type = "info") {
+        const term = document.getElementById("terminalLog");
+        const entry = document.createElement("div");
+        const timestamp = new Date().toISOString().split("T")[1].replace("Z", "");
+        
+        let color = "#94A3B8";
+        if (type === "success") color = "#34D399";
+        if (type === "warning") color = "#FBBF24";
+        if (type === "danger") color = "#F87171";
+        if (type === "cmd") color = "#38BDF8";
+
+        entry.style.color = color;
+        entry.style.marginTop = "0.2rem";
+        entry.textContent = `[${timestamp}] ${message}`;
+        term.appendChild(entry);
+        term.scrollTop = term.scrollHeight;
+    }
+
+    function syncStateUI(state) {
+        currentCardState = state;
+        const badge = document.getElementById("cardStateBadge");
+        badge.textContent = state;
+
+        // Reset step pills
+        ["stepPill1", "stepPill2", "stepPill3", "stepPill4"].forEach(id => {
+            const el = document.getElementById(id);
+            el.style.border = "1px solid var(--border-default)";
+            el.style.background = "var(--bg-surface-2)";
+        });
+
+        if (state === "ACTIVE_BURNER") {
+            badge.style.background = "rgba(5, 150, 105, 0.2)";
+            badge.style.color = "#34D399";
+            badge.style.borderColor = "#059669";
+            
+            document.getElementById("stepPill1").style.border = "1px solid var(--accent)";
+            document.getElementById("stepPill1").style.background = "var(--success-bg)";
+            document.getElementById("btnExecutePurchase").disabled = false;
+            document.getElementById("btnAdversaryProbe").disabled = true;
+            document.getElementById("probeDisabledNotice").style.display = "block";
+            document.getElementById("forensicDocketCard").style.display = "none";
+            document.getElementById("resolutionSuccessCard").style.display = "none";
+        } else if (state === "ARMED_CANARY") {
+            badge.style.background = "rgba(217, 119, 6, 0.2)";
+            badge.style.color = "#FBBF24";
+            badge.style.borderColor = "#D97706";
+            
+            document.getElementById("stepPill2").style.border = "1px solid #D97706";
+            document.getElementById("stepPill2").style.background = "#FFFBEB";
+            document.getElementById("cardSpendLimit").textContent = "₹0.00 (CANARY ARMED)";
+            document.getElementById("cardSpendLimit").style.color = "#FBBF24";
+            document.getElementById("btnExecutePurchase").disabled = true;
+            document.getElementById("btnAdversaryProbe").disabled = false;
+            document.getElementById("probeDisabledNotice").style.display = "none";
+            document.getElementById("forensicDocketCard").style.display = "none";
+            document.getElementById("resolutionSuccessCard").style.display = "none";
+        } else if (state === "TRIPPED") {
+            badge.style.background = "rgba(220, 38, 38, 0.25)";
+            badge.style.color = "#F87171";
+            badge.style.borderColor = "#DC2626";
+
+            document.getElementById("stepPill3").style.border = "1px solid #DC2626";
+            document.getElementById("stepPill3").style.background = "#FEF2F2";
+            document.getElementById("btnExecutePurchase").disabled = true;
+            document.getElementById("btnAdversaryProbe").disabled = true;
+            document.getElementById("forensicDocketCard").style.display = "block";
+            document.getElementById("resolutionSuccessCard").style.display = "none";
+        } else if (state === "NEUTRALIZED") {
+            badge.style.background = "rgba(100, 116, 139, 0.2)";
+            badge.style.color = "#94A3B8";
+            badge.style.borderColor = "#64748B";
+
+            document.getElementById("stepPill4").style.border = "1px solid var(--accent)";
+            document.getElementById("stepPill4").style.background = "var(--success-bg)";
+            document.getElementById("forensicDocketCard").style.display = "none";
+            document.getElementById("resolutionSuccessCard").style.display = "block";
+        }
+    }
+
+    function updateCardArtifactUI(card) {
+        currentCardId = card.id;
+        currentCardState = card.state;
+        currentSpendLimitCents = card.remaining_balance_cents || card.initial_spend_limit_cents;
+        currentMerchantTag = card.merchant_tag;
+
+        document.getElementById("cardPan").textContent = card.masked_pan;
+        document.getElementById("cardMerchant").textContent = card.merchant_tag;
+        document.getElementById("cardExpiry").textContent = card.expiry;
+        document.getElementById("cardSpendLimit").textContent = `₹${(card.remaining_balance_cents / 100).toFixed(2)}`;
+        document.getElementById("cardSpendLimit").style.color = card.remaining_balance_cents > 0 ? "#38BDF8" : "#94A3B8";
+        document.getElementById("cardToken").textContent = card.card_token;
+
+        const limitFmt = `₹${(card.initial_spend_limit_cents / 100).toFixed(2)}`;
+        const morphLimitEl = document.getElementById("morphCalloutLimit");
+        if (morphLimitEl) morphLimitEl.textContent = limitFmt;
+        const morphMerchEl = document.getElementById("morphCalloutMerchant");
+        if (morphMerchEl) morphMerchEl.textContent = card.merchant_tag;
+
+        const s1Merch = document.getElementById("stage1Merchant");
+        if (s1Merch) s1Merch.textContent = card.merchant_tag;
+        const s1Limit = document.getElementById("stage1Limit");
+        if (s1Limit) s1Limit.textContent = limitFmt;
+        const btnPurchaseTxt = document.getElementById("btnExecutePurchaseText");
+        if (btnPurchaseTxt) btnPurchaseTxt.textContent = `Simulate Legitimate Purchase (${limitFmt})`;
+
+        const scenMerch = document.getElementById("scenTargetMerchant");
+        if (scenMerch) scenMerch.textContent = `${card.merchant_tag} (SQL database dump leaked)`;
+        const scenTok = document.getElementById("scenLeakedToken");
+        if (scenTok) scenTok.textContent = card.card_token;
+
+        const docketMerch = document.getElementById("docketMerchant");
+        if (docketMerch) docketMerch.textContent = `${card.merchant_tag} (Breached)`;
+
+        syncStateUI(card.state);
+    }
+
+    // Initialize UI based on loaded card state
+    syncStateUI(currentCardState);
+
+    // MODAL CONTROLS: CREATE CHAMELEON CARD
+    window.openCreateModal = function() {
+        const modal = document.getElementById("createCardModal");
+        if (modal) {
+            modal.style.display = "flex";
+            const input = document.getElementById("inputCardName");
+            if (input) input.focus();
+        }
+    };
+
+    window.closeCreateModal = function() {
+        const modal = document.getElementById("createCardModal");
+        if (modal) {
+            modal.style.display = "none";
+        }
+    };
+
+    window.submitCreateCard = async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById("btnSubmitCreateCard");
+        const originalBtnText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="chameleon-spinner"></span> Issuing Card...`;
+
+        const cardName = document.getElementById("inputCardName").value.trim();
+        const merchantTag = document.getElementById("inputMerchantTag").value.trim();
+        const spendLimit = document.getElementById("inputSpendLimit").value.trim();
+
+        try {
+            const resp = await fetch("{{ url_for('chameleon_lab.api_create_card') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({
+                    card_name: cardName,
+                    merchant_tag: merchantTag,
+                    spend_limit: spendLimit
+                })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                throw new Error(data.error || "Failed to create card");
+            }
+
+            closeCreateModal();
+            updateCardArtifactUI(data.card);
+
+            // Add newly created card to dropdown selector if present
+            const selector = document.getElementById("cardSelector");
+            if (selector) {
+                const opt = document.createElement("option");
+                opt.value = data.card.id;
+                opt.textContent = `${data.card.card_name} (${data.card.merchant_tag}) — ${data.card.state}`;
+                opt.selected = true;
+                selector.appendChild(opt);
+            }
+
+            logToTerminal(`✓ PROVISIONED: Chameleon Card "${data.card.card_name}" issued for ${data.card.merchant_tag} (Limit: ₹${(data.card.initial_spend_limit_cents / 100).toFixed(2)})`, "success");
+            logToTerminal("READY: Single-use card loaded into workbench. Ready for Stage 1 purchase.", "cmd");
+
+            // Reset form fields
+            document.getElementById("createCardForm").reset();
+        } catch (err) {
+            logToTerminal(`✕ CREATE FAILED: ${err.message}`, "danger");
+            alert(`Card Creation Error: ${err.message}`);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnText;
+        }
+    };
+
+    // CARD SWITCHER
+    window.switchCard = async function(cardId) {
+        logToTerminal(`SWITCHING: Loading Chameleon Card #${cardId}...`, "cmd");
+        try {
+            const resp = await fetch(`{{ url_for('chameleon_lab.index') }}api/cards/${cardId}`);
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                throw new Error(data.error || "Failed to load card");
+            }
+
+            updateCardArtifactUI(data.card);
+            logToTerminal(`✓ LOADED: Switched workbench to "${data.card.card_name}" (${data.card.state})`, "success");
+        } catch (err) {
+            logToTerminal(`✕ SWITCH FAILED: ${err.message}`, "danger");
+            alert(`Failed to switch card: ${err.message}`);
+        }
+    };
+
+    // 1. EXECUTE LEGITIMATE PURCHASE (STAGE 1)
+    window.executePurchase = async function() {
+        const btn = document.getElementById("btnExecutePurchase");
+        btn.disabled = true;
+        btn.innerHTML = `<span class="chameleon-spinner"></span> Authorizing Transaction...`;
+
+        logToTerminal(`INITIATING: Legitimate e-commerce charge to ${currentMerchantTag}...`, "cmd");
+
+        try {
+            const resp = await fetch("{{ url_for('chameleon_lab.api_purchase') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ card_id: currentCardId })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || "Purchase failed");
+            }
+
+            logToTerminal(`✓ SETTLED: Wallet debited. Transaction ID: #${data.transaction_id}`, "success");
+            logToTerminal("⚡ MORPH TRIGGERED: Card spend limit dropped to ₹0.00", "warning");
+            logToTerminal("✓ STATUS: Chameleon Card has successfully morphed into ARMED_CANARY!", "success");
+
+            document.getElementById("walletBalanceDisplay").textContent = data.wallet_balance;
+            syncStateUI("ARMED_CANARY");
+
+            btn.innerHTML = "✓ Purchased & Morphed to Canary";
+        } catch (err) {
+            logToTerminal(`✕ ERROR: ${err.message}`, "danger");
+            alert(`Purchase Error: ${err.message}`);
+            btn.disabled = false;
+            const btnPurchaseTxt = document.getElementById("btnExecutePurchaseText");
+            btn.innerHTML = `<svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> ${btnPurchaseTxt ? btnPurchaseTxt.textContent : 'Simulate Legitimate Purchase'}`;
+        }
+    };
+
+    // 2. EXECUTE ADVERSARY PROBE (STAGE 3)
+    window.executeAdversaryProbe = async function() {
+        const btn = document.getElementById("btnAdversaryProbe");
+        btn.disabled = true;
+        btn.innerHTML = `<span class="chameleon-spinner"></span> Adversary Testing Card via Botnet...`;
+
+        logToTerminal("ADVERSARY ACTION: Tor Node 185.220.101.5 sends auth probe ₹1.00", "cmd");
+        logToTerminal("GATEWAY INTERCEPT: Probed token matches ARMED_CANARY tripwire!", "danger");
+        logToTerminal("AUTONOMOUS DEFENSE: Executing 1,200ms deceptive tarpit delay...", "warning");
+
+        try {
+            const resp = await fetch("{{ url_for('chameleon_lab.api_probe') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ card_id: currentCardId })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || "Probe simulation failed");
+            }
+
+            logToTerminal("TARPIT DELAY COMPLETE: Sent fake response (200 OK: Insufficient Funds)", "warning");
+            logToTerminal("🚨 TRIPWIRE SNAP: Attacker IP 185.220.101.5 & JA3 fingerprint logged!", "danger");
+            logToTerminal("🛡️ VAULT LOCKDOWN: User account placed into PROTECTIVE QUARANTINE", "danger");
+
+            syncStateUI("TRIPPED");
+
+            // Update Docket Details
+            if (data.incident) {
+                document.getElementById("docketIp").textContent = data.incident.attacker_ip;
+                document.getElementById("docketGeo").textContent = data.incident.attacker_geo;
+            }
+
+            btn.innerHTML = "🚨 Tripwire Fired — Card Quarantined";
+        } catch (err) {
+            logToTerminal(`✕ ERROR: ${err.message}`, "danger");
+            alert(`Probe Error: ${err.message}`);
+            btn.disabled = false;
+            btn.innerHTML = "Simulate Adversary Probing Leaked Card (₹1.00)";
+        }
+    };
+
+    // 3. RESOLVE INCIDENT (STAGE 4)
+    window.resolveIncident = async function() {
+        const btn = document.getElementById("btnResolveIncident");
+        btn.disabled = true;
+        btn.innerHTML = `<span class="chameleon-spinner"></span> Purging Token & Restoring Vault...`;
+
+        logToTerminal("RESOLUTION INITIATED: Sending cryptographically signed revocation command...", "cmd");
+        logToTerminal("PURGING: Erasing breached token from payment routing tables...", "warning");
+
+        try {
+            const resp = await fetch("{{ url_for('chameleon_lab.api_resolve') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ card_id: currentCardId })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || "Resolution failed");
+            }
+
+            logToTerminal("✓ PURGED: Breached canary token permanently erased from issuer rails", "success");
+            logToTerminal("✓ RESTORED: Vault protective quarantine lifted. Account status: NORMAL", "success");
+
+            syncStateUI("NEUTRALIZED");
+
+            // Update topbar status pill if quarantined
+            const topPill = document.querySelector(".topbar-actions .status-pill-danger");
+            if (topPill) {
+                topPill.className = "status-pill status-pill-success";
+                topPill.innerHTML = '<span class="status-dot"></span> Active';
+            }
+
+            // Smooth scroll to remediation summary card
+            const successCard = document.getElementById("resolutionSuccessCard");
+            if (successCard) {
+                successCard.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        } catch (err) {
+            logToTerminal(`✕ ERROR: ${err.message}`, "danger");
+            alert(`Resolution Error: ${err.message}`);
+            btn.disabled = false;
+            btn.innerHTML = `<svg class="svg-icon svg-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> Neutralize Breached Token & Restore Vault`;
+        }
+    };
+
+    // 4. RESET SIMULATION
+    window.resetSimulation = async function() {
+        const btn = document.getElementById("btnResetSimulation");
+        btn.disabled = true;
+        logToTerminal("RESETTING: Provisioning fresh Chameleon Card and clearing incident state...", "cmd");
+
+        try {
+            const resp = await fetch("{{ url_for('chameleon_lab.api_reset') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                }
+            });
+
+            const data = await resp.json();
+            if (!resp.ok) {
+                throw new Error(data.error || "Reset failed");
+            }
+
+            updateCardArtifactUI(data.card);
+            document.getElementById("walletBalanceDisplay").textContent = data.wallet_balance;
+
+            logToTerminal("✓ READY: Fresh Chameleon Card provisioned (Limit: ₹1,499.00).", "success");
+            syncStateUI("ACTIVE_BURNER");
+            btn.disabled = false;
+        } catch (err) {
+            logToTerminal(`✕ RESET FAILED: ${err.message}`, "danger");
+            alert(`Reset Error: ${err.message}`);
+            btn.disabled = false;
+        }
+    };
+
+    // Auto-open modal if requested via URL param ?action=create
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("action") === "create") {
+        openCreateModal();
+    }
+});
+</script>
+{% endblock %}
